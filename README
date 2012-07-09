@@ -1,5 +1,9 @@
 Codes for the Blinkenwall
 
-comming soon
+So far in this repository:
+
+- blink
+General library to send data to the wall, and utility to read
+RGB data from stdin and transmit to the wall.
 
 see also: https://metalab.at/wiki/Blinkenwall.com

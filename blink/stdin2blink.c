@@ -1,6 +1,10 @@
 /* Metalab Blinkenwall interface
  * Reads bytes from STDIN, writes to Raspberry Pi GPIO.
  * Uses SPI protocol for ShiftBrites on Blinkenwall.
+ *
+ * Data have to be in packed binary 8 bit RGB format,
+ * and contain a whole frame (135 bytes for Meatalab Blinkenwall).
+ * (e.g. RGBRGBRGBRGB...)
  * 
  * Requires BCM 2835 library from:
  * http://www.open.com.au/mikem/bcm2835/
