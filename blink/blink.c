@@ -75,9 +75,12 @@ void bw_to_wall(const uint8_t * rgb_data) {
         for (x=BW_WALL_WIDTH-1; x>=0; --x) {
             int idx;
             uint32_t val =
-                ((uint32_t)rgb_data_tmp[1]) << 2 |
-                ((uint32_t)rgb_data_tmp[0]) << 12 |
-                ((uint32_t)rgb_data_tmp[2]) << 22;
+                (((uint32_t)rgb_data_tmp[1] << 2) +
+                 (rgb_data_tmp[1] >> 6)) |
+                (((uint32_t)rgb_data_tmp[0] << 2) +
+                 (rgb_data_tmp[0] >> 6)) << 10 |
+                (((uint32_t)rgb_data_tmp[2] << 2) +
+                 (rgb_data_tmp[2] >> 6)) << 20;
 
             idx = BW_WALL_HEIGHT * x;
             idx += x%2==0 ? (BW_WALL_HEIGHT-1-y) : y;
