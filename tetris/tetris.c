@@ -9,18 +9,20 @@
 #define WALL_HEIGHT 9
 #define WALL_SIZE WALL_WIDTH * WALL_HEIGHT
 
-#define KEY_UP    'w'
-#define KEY_DOWN  's'
-#define KEY_LEFT  'a'
-#define KEY_RIGHT 'd'
+#define KEY_ROT_RIGHT 'e'
+#define KEY_ROT_LEFT  'q'
+#define KEY_LEFT      'a'
+#define KEY_RIGHT     'd'
+#define KEY_DOWN      's'
+#define KEY_QUIT      0x3 // Ctrl+c
 
 #define MAX_STONE_SIZE 5
 
 #define NUM_STONES 7
 
-#define SLEEP_TIME 1000000
+#define SLEEP_TIME 10000
 
-#define DEBUG 1
+#define DEBUG 0
 
 typedef struct stone {
     uint8_t data[MAX_STONE_SIZE][MAX_STONE_SIZE][3];
@@ -228,7 +230,6 @@ void move_playfield_down(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
                          struct stone * st, int line){
     uint8_t playfield_tmp [WALL_WIDTH][WALL_HEIGHT][3];
     int i, x, y, length;
-    //FIX IT GEORG
 
     length = WALL_WIDTH;
 
@@ -243,23 +244,20 @@ void move_playfield_down(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
 
     //playfield um eins nach gravity
     memcpy(playfield_tmp, playfield, WALL_SIZE * 3);
-    for (y=0; y<WALL_HEIGHT; ++y) {
+    for (y=1; y<WALL_HEIGHT; ++y) {
         for (x=0; x<WALL_WIDTH; ++x) {
             playfield[x][y][0]=playfield_tmp[x][y-1][0];
             playfield[x][y][1]=playfield_tmp[x][y-1][1];
             playfield[x][y][2]=playfield_tmp[x][y-1][2];
         }
     }
-    //FIX IT GEORG
-/*
-    for (i=0; i<3; ++i) {
-        playfield [0][0][i]=0;
-        playfield [0][1][i]=0;
-        playfield [0][2][i]=0;
-        playfield [0][3][i]=0;
-        playfield [0][4][i]=0;
+
+    for (i=0; i<length; ++i) {
+        playfield [i][0][0]=0;
+        playfield [i][0][1]=0;
+        playfield [i][0][2]=0;
     }
-*/
+
     paint_field(playfield, st);
     send_field(playfield, st);
     usleep(SLEEP_TIME);
@@ -339,13 +337,33 @@ int allow_rotate(struct stone * st) {
     int x, y;
     for (y=0; y<MAX_STONE_SIZE; ++y) {
         for (x=0; x<MAX_STONE_SIZE; ++x) {
-            if(st->data[x][y][0] > 0 || st->data[x][y][1] > 0 || st->data[x][y][2] > 0) {
+            if(st->data[x][y][0] > 0 ||
+               st->data[x][y][1] > 0 ||
+               st->data[x][y][2] > 0) {
                 if (x+st->x < 0 || x+st->x >= WALL_WIDTH)
                     return 0;
             }
         }
     }
     return 1;
+}
+
+int read_key(int delay) {
+    fd_set readfds;
+    struct timeval tv;
+    int retval;
+
+    FD_ZERO(&readfds);
+    FD_SET(0, &readfds);
+    tv.tv_sec = 0;
+    tv.tv_usec = delay;
+
+    retval = select(1, &readfds, NULL, NULL, &tv);
+
+    if (retval > 0)
+        return getchar();
+    else
+        return 0;
 }
 
 int main(int argc, char * argv[]) {
@@ -357,90 +375,110 @@ int main(int argc, char * argv[]) {
     int i, x, y;
     int line_to_remove;
     int err;
+    int frame = 0;
+    int delay = SLEEP_TIME;
+
+    system ("/bin/stty -echo raw");
 
     srand(time(NULL));
-    
+ 
     memset(playfield, 0, WALL_SIZE * 3);
     memset(st.data, 0, MAX_STONE_SIZE * MAX_STONE_SIZE*3);
     memset(st_tmp.data, 0, MAX_STONE_SIZE * MAX_STONE_SIZE*3);
-    
-    /*
-    playfield [0][4][2]=255;
-    playfield [4][4][2]=255;
-    playfield [5][4][2]=255;
-    playfield [6][4][1]=255;
-    playfield [7][4][0]=255;
-    playfield [8][4][0]=255;
-    playfield [7][4][1]=255;*/
-/*
-  
-    playfield [0][0][2]=255;
-    playfield [0][1][2]=255;
-    playfield [0][2][2]=255;
-    playfield [0][4][1]=255;
-    
-    playfield [1][0][0]=255;
-    playfield [1][1][0]=255;
-    playfield [1][4][1]=255;  
-*/
 
-    //st = stones[rand() % NUM_STONES];
-    st = stones[0];
+    st = stones[rand() % NUM_STONES];
 
     while(1) {
         struct stone moved_stone;
         struct stone rotated_stone;
         int touched;
+        int key;
+        int paint = 0;
+
+        key = read_key(delay);
         
 	if (DEBUG) fprintf(stderr, "WHILE BEGIN\n\r");
 
         touched = 0;
 
-        rotated_stone = rotate_stone(st);
-
+        if (key == KEY_ROT_LEFT) {
+            rotated_stone = rotate_stone(st);
+        } else if (key == KEY_ROT_RIGHT) {
+            int i;
+            for (i=0; i<3; ++i)
+                rotated_stone = rotate_stone(st);
+        } else if (key == KEY_LEFT) {
+            rotated_stone.x++;
+        } else if (key == KEY_RIGHT) {
+            rotated_stone.x--;
+        } else if (key == KEY_DOWN) {
+            delay /= 10;
+        } else if (key == KEY_QUIT) {
+            goto exit;
+        } else {
+            rotated_stone = st;
+        }
+        
         if (allow_rotate(&rotated_stone)) {
+            paint = 1;
             if (!check_for_touch(playfield, &rotated_stone))
                 st = rotated_stone;
             else
                 touched = 1;
         }
+        
+        if ((frame++ % (10000000 / SLEEP_TIME)) == 0) {
+            
+            moved_stone = st;
+            moved_stone.y++;
+            
+            if (!check_for_touch(playfield, &moved_stone))
+                st = moved_stone;
+            else
+                touched = 1;
 
-        moved_stone = st;
-        moved_stone.y++;
+            if (touched) {
+                if (DEBUG) fprintf(stderr, "TOUCHED WITH RETURN\n\r");
 
-        if (!check_for_touch(playfield, &moved_stone))
-            st = moved_stone;
-        else
-            touched = 1;
+                for (y=0; y<MAX_STONE_SIZE; ++y) {
+                    for (x=0; x<MAX_STONE_SIZE; ++x) {
+                        if (x+st.x < 0) {
+                            fprintf(stderr, "Aus is!\n\r");
+                            goto exit;
+                        }
+                    }
+                }                
 
-        if (touched) {
-	    if (DEBUG) fprintf(stderr, "TOUCHED WITH RETURN\n\r");
-
-	    for (y=0; y<MAX_STONE_SIZE; ++y) {
-		for (x=0; x<MAX_STONE_SIZE; ++x) {
-		    if(st.data[x][y][0] > 0 ||
-                       st.data[x][y][1] > 0 ||
-                       st.data[x][y][2] > 0){
-			playfield[x+st.x][y+st.y][0]=st.data[x][y][0];
-			playfield[x+st.x][y+st.y][1]=st.data[x][y][1];
-			playfield[x+st.x][y+st.y][2]=st.data[x][y][2];
-		    }
-		}
-	    }
-            st = stones[rand() % NUM_STONES];
-        }
+                for (y=0; y<MAX_STONE_SIZE; ++y) {
+                    for (x=0; x<MAX_STONE_SIZE; ++x) {
+                        if(st.data[x][y][0] > 0 ||
+                           st.data[x][y][1] > 0 ||
+                           st.data[x][y][2] > 0) {
+                            playfield[x+st.x][y+st.y][0]=st.data[x][y][0];
+                            playfield[x+st.x][y+st.y][1]=st.data[x][y][1];
+                            playfield[x+st.x][y+st.y][2]=st.data[x][y][2];
+                        }
+                    }
+                }
+                st = stones[rand() % NUM_STONES];
+                delay = SLEEP_TIME;
+            }
 	
-	while ((line_to_remove = check_for_ready_line(playfield)) != -1){
-            if (DEBUG) fprintf(stderr, "LINE READY %d\n\r", line_to_remove);
-            move_playfield_down(playfield, &st, line_to_remove);
-	}
+            while ((line_to_remove = check_for_ready_line(playfield)) != -1){
+                if (DEBUG) fprintf(stderr, "LINE READY %d\n\r", line_to_remove);
+                move_playfield_down(playfield, &st, line_to_remove);
+            }
+            paint = 1;
+        }
 
-        paint_field(playfield, &st);
-        send_field(playfield, &st);
-        usleep(SLEEP_TIME);
+        if (paint) {
+            paint_field(playfield, &st);
+            send_field(playfield, &st);
+        }
     }
     
 exit:
+    printf("\n\r");
     system ("/bin/stty echo cooked");
 
     return 0;
