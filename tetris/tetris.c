@@ -47,7 +47,7 @@ struct stone stones[NUM_STONES] =  { {
         2, // WIDTH
         3, // HEIGHT
         1, // Position X
-        -2 // Position Y
+        2 // Position Y
     }, {
         { { {0,   0,   0}, {0,   0,   0}, {255, 127, 0}, {0,   0,   0} },
           { {255, 127, 0}, {255, 127, 0}, {255, 127, 0}, {0,   0,   0} },
@@ -56,7 +56,7 @@ struct stone stones[NUM_STONES] =  { {
         2, // WIDTH
         3, // HEIGHT
         1, // Position X
-        -2 // Position Y
+        2 // Position Y
     }, {
         { { {255, 255, 0}, {255, 255, 0}, {0,   0,   0}, {0,   0,   0} },
           { {255, 255, 0}, {255, 255, 0}, {0,   0,   0}, {0,   0,   0} },
@@ -65,7 +65,7 @@ struct stone stones[NUM_STONES] =  { {
         2, // WIDTH
         2, // HEIGHT
         2, // Position X
-        -2 // Position Y
+        2 // Position Y
     }, {
         { { {0,   0,   0}, {0,   255, 0}, {0,   255, 0}, {0,   0,   0} },
           { {0,   255, 0}, {0,   255, 0}, {0,   0,   0}, {0,   0,   0} },
@@ -74,7 +74,7 @@ struct stone stones[NUM_STONES] =  { {
         2, // WIDTH
         3, // HEIGHT
         1, // Position X
-        -2 // Position Y
+        2 // Position Y
     }, {
         { { {0,   0,   0}, {128, 0, 128}, {0,   0,   0}, {0,   0,   0} },
           { {128, 0, 128}, {128, 0, 128}, {128, 0, 128}, {0,   0,   0} },
@@ -83,7 +83,7 @@ struct stone stones[NUM_STONES] =  { {
         2, // WIDTH
         3, // HEIGHT
         1, // Position X
-        -2 // Position Y
+        2 // Position Y
     }, {
         { { {255, 0,   0}, {255, 0,   0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {255, 0,   0}, {255, 0,   0}, {0,   0,   0} },
@@ -92,7 +92,7 @@ struct stone stones[NUM_STONES] =  { {
         2, // WIDTH
         3, // HEIGHT
         1, // Position X
-        -2 // Position Y
+        2 // Position Y
     } };
 
 /*
@@ -125,20 +125,41 @@ struct stone rotate_stone(struct stone st) {
     struct stone new_st;
     int x, y;
     int i;
-    st.x = st.x - 1;
-    //for (i=0; i<4; ++i) {
-        for (x=0; x<MAX_STONE_SIZE; ++x) {
-            for (y=0; y<MAX_STONE_SIZE; ++y) {
-                new_st.data[y][x][0] = st.data[x][st.height-y-1][0];
-            new_st.data[y][x][1] = st.data[x][st.height-y-1][1];
-            new_st.data[y][x][2] = st.data[x][st.height-y-1][2];
-            }
-        }
-        //}
+    memset(new_st.data, 0, MAX_STONE_SIZE * MAX_STONE_SIZE * 3);
+
     new_st.width = st.height;
     new_st.height = st.width;
+
+    for (y=0; y<st.height; ++y) {
+        for (x=0; x<st.width; ++x) {
+/*
+            new_st.data[x][y][0] = st.data[y][st.width-x-1][0];
+            new_st.data[x][y][1] = st.data[y][st.width-x-1][1];
+            new_st.data[x][y][2] = st.data[y][st.width-x-1][2];
+*/
+/*
+            new_st.data[y][x][0] = st.data[st.height-y-1][st.width-x-1][0];
+            new_st.data[y][x][1] = st.data[st.height-y-1][st.width-x-1][1];
+            new_st.data[y][x][2] = st.data[st.height-y-1][st.width-x-1][2];
+*/
+            new_st.data[y][st.width-x-1][0] = st.data[x][y][0];
+            new_st.data[y][st.width-x-1][1] = st.data[x][y][1];
+            new_st.data[y][st.width-x-1][2] = st.data[x][y][2];
+        }
+    }
     new_st.x = st.x;
-    new_st.y = st.y - 1;// + st.width / 2;
+    new_st.y = st.y;
+
+    fprintf(stderr, "w: %d, h: %d\n\r", new_st.width / 2, new_st.height / 2);
+/*
+    if (new_st.width > new_st.height) {
+        //new_st.x -= new_st.height / 2 + 1;
+        //new_st.y += new_st.width / 2 - 1;
+    } else if (new_st.width < new_st.height) {
+        //new_st.x += new_st.height / 2 - 1;
+        //new_st.y -= new_st.width / 2 + 1;
+    }
+*/
 
     return new_st;
 }
@@ -311,7 +332,7 @@ int check_for_touch(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
         for (x=0; x<st->width; ++x) {
 	    if(st->data[x][y][0] != 0 || st->data[x][y][1] != 0 || st->data[x][y][2] != 0){
 		if(st->x+x >= 0 && st->x+x < WALL_WIDTH && st->y+y >= 0 && st->y+y < WALL_HEIGHT){
-                    if (DEBUG) fprintf(stderr, "X:%d Y:%d\n\r", st->x+x, st->y+y);
+                    //if (DEBUG) fprintf(stderr, "X:%d Y:%d\n\r", st->x+x, st->y+y);
                     if(playfield[st->x+x][st->y+y][0] != 0 ||
                        playfield[st->x+x][st->y+y][1] != 0 ||
                        playfield[st->x+x][st->y+y][2] != 0){
