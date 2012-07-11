@@ -315,12 +315,12 @@ int check_for_touch(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
     
     for (y=0; y<MAX_STONE_SIZE; ++y) {
         for (x=0; x<MAX_STONE_SIZE; ++x) {
-	    if(st->data[x][y][0] != 0 || st->data[x][y][1] != 0 || st->data[x][y][2] != 0){
+	    if(st->data[x][y][0] != 0 || st->data[x][y][1] != 0 || st->data[x][y][2] != 0) {
 		if(st->x+x >= 0 && st->x+x < WALL_WIDTH && st->y+y >= 0 && st->y+y < WALL_HEIGHT){
                     //if (DEBUG) fprintf(stderr, "X:%d Y:%d\n\r", st->x+x, st->y+y);
                     if(playfield[st->x+x][st->y+y][0] != 0 ||
                        playfield[st->x+x][st->y+y][1] != 0 ||
-                       playfield[st->x+x][st->y+y][2] != 0){
+                       playfield[st->x+x][st->y+y][2] != 0) {
                         if (DEBUG) fprintf(stderr, "BRICK ON X:%d Y:%d ", st->x, st->y);
                         return 5;
                     }
@@ -427,7 +427,7 @@ int main(int argc, char * argv[]) {
                 touched = 1;
         }
         
-        if ((frame++ % (10000000 / SLEEP_TIME)) == 0) {
+        if ((frame++ % (1000000 / SLEEP_TIME)) == 0) {
             
             moved_stone = st;
             moved_stone.y++;
@@ -442,12 +442,14 @@ int main(int argc, char * argv[]) {
 
                 for (y=0; y<MAX_STONE_SIZE; ++y) {
                     for (x=0; x<MAX_STONE_SIZE; ++x) {
-                        if (x+st.x < 0) {
-                            fprintf(stderr, "Aus is!\n\r");
-                            goto exit;
+                        if(st.data[x][y][0] > 0 || st.data[x][y][1] > 0 || st.data[x][y][2] > 0) {
+                            if (y+st.y < 0){
+                                fprintf(stderr, "Aus is\n\r");
+                                goto exit;
+                            }
                         }
                     }
-                }                
+                }
 
                 for (y=0; y<MAX_STONE_SIZE; ++y) {
                     for (x=0; x<MAX_STONE_SIZE; ++x) {
