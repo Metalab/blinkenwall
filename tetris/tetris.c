@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define WALL_WIDTH 9
-#define WALL_HEIGHT 5
+#define WALL_WIDTH 5
+#define WALL_HEIGHT 9
 #define WALL_SIZE WALL_WIDTH * WALL_HEIGHT
 
 #define KEY_UP    'w'
@@ -15,10 +15,8 @@
 #define KEY_RIGHT 'd'
 
 #define MAX_STONE_SIZE 4
-#define STONE_SIZE 5
 
-#define STONE_X_START 3
-#define STONE_Y_START 0
+#define NUM_STONES 7
 
 #define SLEEP_TIME 1000000
 
@@ -32,22 +30,22 @@ typedef struct stone {
     int y;
 } stone_t;
 
-struct stone stones[2] =  { {
+struct stone stones[NUM_STONES] =  { {
         { { {0, 255, 255}, {0, 255, 255}, {0, 255, 255}, {0, 255, 255} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} } },
-        4, // WIDTH
-        1, // HEIGHT
-        0, // Position X
-        -1 // Position Y
+        1, // WIDTH
+        4, // HEIGHT
+        2, // Position X
+        1 // Position Y
     }, {
         { { {0,   0, 255}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0, 255}, {0,   0, 255}, {0,   0, 255}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} } }, 
-        3, // WIDTH
-        2, // HEIGHT
+        2, // WIDTH
+        3, // HEIGHT
         1, // Position X
         -2 // Position Y
     }, {
@@ -55,8 +53,8 @@ struct stone stones[2] =  { {
           { {255, 127, 0}, {255, 127, 0}, {255, 127, 0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} } }, 
-        3, // WIDTH
-        2, // HEIGHT
+        2, // WIDTH
+        3, // HEIGHT
         1, // Position X
         -2 // Position Y
     }, {
@@ -73,8 +71,8 @@ struct stone stones[2] =  { {
           { {0,   255, 0}, {0,   255, 0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} } }, 
-        3, // WIDTH
-        2, // HEIGHT
+        2, // WIDTH
+        3, // HEIGHT
         1, // Position X
         -2 // Position Y
     }, {
@@ -82,8 +80,8 @@ struct stone stones[2] =  { {
           { {128, 0, 128}, {128, 0, 128}, {128, 0, 128}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} } }, 
-        3, // WIDTH
-        2, // HEIGHT
+        2, // WIDTH
+        3, // HEIGHT
         1, // Position X
         -2 // Position Y
     }, {
@@ -91,12 +89,13 @@ struct stone stones[2] =  { {
           { {0,   0,   0}, {255, 0,   0}, {255, 0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} } }, 
-        3, // WIDTH
-        2, // HEIGHT
+        2, // WIDTH
+        3, // HEIGHT
         1, // Position X
         -2 // Position Y
     } };
 
+/*
 void rotate90clock(uint8_t * infield, uint8_t * outfield,
               int w_in,  int h_in) {
     int x, y;
@@ -120,6 +119,29 @@ void rotate90cclock(uint8_t * infield, uint8_t * outfield,
         }
     }
 }
+*/
+
+struct stone rotate_stone(struct stone st) {
+    struct stone new_st;
+    int x, y;
+    int i;
+    st.x = st.x - 1;
+    //for (i=0; i<4; ++i) {
+        for (x=0; x<MAX_STONE_SIZE; ++x) {
+            for (y=0; y<MAX_STONE_SIZE; ++y) {
+                new_st.data[y][x][0] = st.data[x][st.height-y-1][0];
+            new_st.data[y][x][1] = st.data[x][st.height-y-1][1];
+            new_st.data[y][x][2] = st.data[x][st.height-y-1][2];
+            }
+        }
+        //}
+    new_st.width = st.height;
+    new_st.height = st.width;
+    new_st.x = st.x;
+    new_st.y = st.y - 1;// + st.width / 2;
+
+    return new_st;
+}
 
 void paint_field(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
                  struct stone * st) {
@@ -130,7 +152,9 @@ void paint_field(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
 
     for (y=0; y<WALL_HEIGHT; ++y) {
         for (x=0; x<WALL_WIDTH; ++x) {
-            if(playfield[x][y][0] != 0 || playfield[x][y][1] != 0 || playfield[x][y][2] != 0){
+            if(playfield[x][y][0] != 0 ||
+               playfield[x][y][1] != 0 ||
+               playfield[x][y][2] != 0){
 		field[x][y]='#';
 	    }
         }
@@ -138,8 +162,11 @@ void paint_field(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
 
     for (y=0; y<st->height; ++y) {
         for (x=0; x<st->width; ++x) {
-    	    if(st->data[x][y][0] > 0 || st->data[x][y][1] > 0 || st->data[x][y][2] > 0){
-                if (x+st->x >= 0 && x+st->x < WALL_WIDTH && y+st->y >= 0 && y+st->y < WALL_HEIGHT)
+    	    if(st->data[x][y][0] > 0 ||
+               st->data[x][y][1] > 0 ||
+               st->data[x][y][2] > 0){
+                if (x+st->x >= 0 && x+st->x < WALL_WIDTH &&
+                    y+st->y >= 0 && y+st->y < WALL_HEIGHT)
                     field[x+st->x][y+st->y]='*';
 	    }
 	}
@@ -147,7 +174,7 @@ void paint_field(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
     	    
     for (y=0; y<WALL_HEIGHT; ++y) {
         for (x=0; x<WALL_WIDTH; ++x) {
-            fprintf(stderr, "%c", field[x][y]);
+            fprintf(stderr, "%c", field[WALL_WIDTH-x-1][y]);
         }
         fprintf(stderr, "\n\r");
     }
@@ -157,6 +184,7 @@ void paint_field(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
 void send_field(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
                 struct stone * st){
     uint8_t output[WALL_WIDTH][WALL_HEIGHT][3];
+
     int i, x, y;
 
     memset(output, 0, WALL_SIZE*3);
@@ -169,8 +197,8 @@ void send_field(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
         }
     }
     
-    for (y=0; y<STONE_SIZE; ++y) {
-        for (x=0; x<STONE_SIZE; ++x) {
+    for (y=0; y<st->height; ++y) {
+        for (x=0; x<st->width; ++x) {
             if(st->data[x][y][0] > 0 || st->data[x][y][1] > 0 || st->data[x][y][2] > 0){
                 if (x+st->x >= 0 && x+st->x < WALL_WIDTH && y+st->y >= 0 && y+st->y < WALL_HEIGHT){
                     for (i=0; i<3; ++i) {
@@ -181,12 +209,9 @@ void send_field(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
 	}
     }
 
-    for (y=0; y<WALL_HEIGHT; ++y) {
-        for (x=0; x<WALL_WIDTH; ++x) {
-            putchar(output[x][y][0]);
-            putchar(output[x][y][1]);
-            putchar(output[x][y][2]);
-	}
+    uint8_t * rotated_tmp = (uint8_t*)&output[0][0];
+    for (i=0; i<WALL_WIDTH*WALL_HEIGHT*3; ++i) {
+        putchar(*rotated_tmp++);
     }
     fflush(stdout);
 }
@@ -300,26 +325,36 @@ int check_for_touch(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
     
     return 0;
   
-}  
+}
+
+int allow_rotate(struct stone * st) {
+    int x, y;
+    for (y=0; y<st->height; ++y) {
+        for (x=0; x<st->width; ++x) {
+            if(st->data[x][y][0] > 0 || st->data[x][y][1] > 0 || st->data[x][y][2] > 0) {
+                if (x+st->x < 0 || x+st->x >= WALL_WIDTH)
+                    return 0;
+            }
+        }
+    }
+    return 1;
+}
 
 int main(int argc, char * argv[]) {
     uint8_t playfield [WALL_WIDTH][WALL_HEIGHT][3];
 
     struct stone st;
     struct stone st_tmp;
-    int stonex;
-    int stoney;
 
     int i, x, y;
     int line_to_remove;
     int err;
+
+    srand(time(NULL));
     
-    stonex=STONE_X_START;
-    stoney=STONE_Y_START;
-    
-    memset(playfield, 0, WALL_SIZE*3);
-    memset(st.data, 0, MAX_STONE_SIZE*STONE_SIZE*3);
-    memset(st_tmp.data, 0, MAX_STONE_SIZE*STONE_SIZE*3);
+    memset(playfield, 0, WALL_SIZE * 3);
+    memset(st.data, 0, MAX_STONE_SIZE * MAX_STONE_SIZE*3);
+    memset(st_tmp.data, 0, MAX_STONE_SIZE * MAX_STONE_SIZE*3);
     
     /*
     playfield [0][4][2]=255;
@@ -329,7 +364,7 @@ int main(int argc, char * argv[]) {
     playfield [7][4][0]=255;
     playfield [8][4][0]=255;
     playfield [7][4][1]=255;*/
-
+/*
   
     playfield [0][0][2]=255;
     playfield [0][1][2]=255;
@@ -339,39 +374,55 @@ int main(int argc, char * argv[]) {
     playfield [1][0][0]=255;
     playfield [1][1][0]=255;
     playfield [1][4][1]=255;  
+*/
+
+    //st = stones[rand() % NUM_STONES];
+    st = stones[0];
 
     while(1) {
+        struct stone moved_stone;
+        struct stone rotated_stone;
+        int touched;
         
-        rotate90clock((uint8_t*)&st.data[0][0], (uint8_t*)&st_tmp.data[0][0],
-                      st.width, st.height);
-        st_tmp.height = st.width;
-        st_tmp.width = st.height;
-        memcpy(&st.data[0][0], st_tmp.data[0][0], st.width * st.height * 3);
-        st.width = st_tmp.width;
-        st.height = st_tmp.height;
-
 	if (DEBUG) fprintf(stderr, "WHILE BEGIN\n\r");
-        
-//	stoney=stoney+1;
-	
-	if (err = check_for_touch(playfield, &st)){
-	    
-	    if (DEBUG) fprintf(stderr, "TOUCHED WITH RETURN: %d\n\r", err);
 
-	    for (y=0; y<STONE_SIZE; ++y) {
-		for (x=0; x<STONE_SIZE; ++x) {
+        touched = 0;
+
+        rotated_stone = rotate_stone(st);
+
+        //if (allow_rotate(&rotated_stone)) {
+            if (!check_for_touch(playfield, &rotated_stone))
+                st = rotated_stone;
+            else
+                touched = 1;
+            //}
+
+        moved_stone = st;
+        //moved_stone.y++;
+
+        if (!check_for_touch(playfield, &moved_stone))
+            st = moved_stone;
+        else
+            touched = 1;
+
+	//if (err = check_for_touch(playfield, &st)){
+        if (touched) {
+	    if (DEBUG) fprintf(stderr, "TOUCHED WITH RETURN\n\r");
+
+	    for (y=0; y<st.height; ++y) {
+		for (x=0; x<st.width; ++x) {
 		    if(st.data[x][y][0] > 0 ||
                        st.data[x][y][1] > 0 ||
                        st.data[x][y][2] > 0){
-			playfield[x+st.x][y+st.y-1][0]=st.data[x][y][0];
-			playfield[x+st.x][y+st.y-1][1]=st.data[x][y][1];
-			playfield[x+st.x][y+st.y-1][2]=st.data[x][y][2];
+			playfield[x+st.x][y+st.y][0]=st.data[x][y][0];
+			playfield[x+st.x][y+st.y][1]=st.data[x][y][1];
+			playfield[x+st.x][y+st.y][2]=st.data[x][y][2];
 		    }
 		}
 	    }
-	    st.x=STONE_X_START;
-	    st.y=STONE_Y_START;
-	}
+            //st = stones[rand() % NUM_STONES];
+            st = stones[0];
+        }
 	
 	while ((line_to_remove = check_for_ready_line(playfield)) != -1){
             if (DEBUG) fprintf(stderr, "LINE READY %d\n\r", line_to_remove);
