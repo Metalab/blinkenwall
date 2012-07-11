@@ -14,16 +14,43 @@
 #define KEY_LEFT  'a'
 #define KEY_RIGHT 'd'
 
+#define MAX_STONE_SIZE 4
 #define STONE_SIZE 5
 
-#define	GRAVITY_X -1
-#define	GRAVITY_Y 0
-#define STONE_X_START 14
+#define STONE_X_START 3
 #define STONE_Y_START 0
 
 #define SLEEP_TIME 1000000
 
 #define DEBUG 1
+
+typedef struct stone {
+    uint8_t data[MAX_STONE_SIZE][MAX_STONE_SIZE][3];
+    int width;
+    int height;
+    int x;
+    int y;
+} stone_t;
+
+struct stone stones[2] =  { {
+        { { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
+          { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
+          { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
+          { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} } },
+        4, // WIDTH
+        4, // HEIGHT
+        2, // Position X
+        -4 // Position Y
+    }, {
+        { { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
+          { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
+          { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
+          { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} } }, 
+        4, // WIDTH
+        4, // HEIGHT
+        2, // Position X
+        -4 // Position Y
+    } };
 
 void paint_field(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3], uint8_t stone[STONE_SIZE][STONE_SIZE][3], int stonex, int stoney) {
     char field[WALL_WIDTH][WALL_HEIGHT];
@@ -59,7 +86,29 @@ void paint_field(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3], uint8_t stone[ST
     fprintf(stderr, "\n\r");
 }
 
+void rotate90clock(uint8_t * infield, uint8_t * outfield,
+              int w_in,  int h_in) {
+    int x, y;
+    for (x=0; x<h_in; ++x) {
+        for (y=0; y<w_in; ++y) {
+            outfield[x*3+y*w_in*3] = infield[(w_in-y-1)*3+x*w_in*3];
+            outfield[x*3+y*w_in*3+1] = infield[(w_in-y-1)*3+x*w_in*3+1];
+            outfield[x*3+y*w_in*3+2] = infield[(w_in-y-1)*3+x*w_in*3+2];
+        }
+    }
+}
 
+void rotate90cclock(uint8_t * infield, uint8_t * outfield,
+              int w_in,  int h_in) {
+    int x, y;
+    for (x=0; x<h_in; ++x) {
+        for (y=0; y<w_in; ++y) {
+            outfield[y*3+x*w_in*3] = infield[x*3+(w_in-y-1)*w_in*3];
+            outfield[y*3+x*w_in*3+1] = infield[x*3+(w_in-y-1)*w_in*3+1];
+            outfield[y*3+x*w_in*3+2] = infield[x*3+(w_in-y-1)*w_in*3+2];
+        }
+    }
+}
 
 void send_field(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3], uint8_t stone[STONE_SIZE][STONE_SIZE][3], int stonex, int stoney) {
     uint8_t output[WALL_WIDTH][WALL_HEIGHT][3];
@@ -107,19 +156,12 @@ void move_playfield_down(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
     int i, x, y, length;
     //FIX IT GEORG
 
-    length = GRAVITY_X ? WALL_HEIGHT : WALL_WIDTH;
+    length = WALL_WIDTH;
 
     for (i=0; i<length; ++i) {
-        if (GRAVITY_X) {
-            x = line;
-            y = i;
-        } else {
-            x = i;
-            y = line;
-        }
-        playfield[x][y][0]=0;
-        playfield[x][y][1]=0;
-        playfield[x][y][2]=0;
+        playfield[i][line][0]=0;
+        playfield[i][line][1]=0;
+        playfield[i][line][2]=0;
     }
     paint_field(playfield, stone, stonex, stoney);
     send_field(playfield, stone, stonex, stoney);
@@ -129,12 +171,13 @@ void move_playfield_down(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
     memcpy(playfield_tmp, playfield, WALL_SIZE * 3);
     for (y=0; y<WALL_HEIGHT; ++y) {
         for (x=0; x<WALL_WIDTH; ++x) {
-            playfield[x][y][0]=playfield_tmp[x-GRAVITY_X][y-GRAVITY_Y][0];
-            playfield[x][y][1]=playfield_tmp[x-GRAVITY_X][y-GRAVITY_Y][1];
-            playfield[x][y][2]=playfield_tmp[x-GRAVITY_X][y-GRAVITY_Y][2];
+            playfield[x][y][0]=playfield_tmp[x][y-1][0];
+            playfield[x][y][1]=playfield_tmp[x][y-1][1];
+            playfield[x][y][2]=playfield_tmp[x][y-1][2];
         }
     }
     //FIX IT GEORG
+/*
     for (i=0; i<3; ++i) {
         playfield [0][0][i]=0;
         playfield [0][1][i]=0;
@@ -142,6 +185,7 @@ void move_playfield_down(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
         playfield [0][3][i]=0;
         playfield [0][4][i]=0;
     }
+*/
     paint_field(playfield, stone, stonex, stoney);
     send_field(playfield, stone, stonex, stoney);
     usleep(SLEEP_TIME);
@@ -150,9 +194,7 @@ void move_playfield_down(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
 int check_for_ready_line(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3]){
 
     int x, y, line;
-    int *x1, *y1;
-    int width, height;
-
+/*
     if (GRAVITY_X != 0) {
         width = WALL_WIDTH;
         height = WALL_HEIGHT;
@@ -164,24 +206,20 @@ int check_for_ready_line(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3]){
         x1 = &y;
         y1 = &x;
     }
+*/
  
-#if (GRAVITY_X < 0 || GRAVITY_Y < 0)
-    for (x=0; x<width; ++x) {
-#else
-    for (x=width; x>=0; --x) {
-#endif
+    for (y=0; y<WALL_HEIGHT; ++y) {
         line=0;
-        for (y=0; y<height; ++y) {
+        for (x=0; x<WALL_WIDTH; ++x) {
             //if (DEBUG) fprintf(stderr, " x:%d   y: %d\n\r", line,i);
-            if(playfield[*x1][*y1][0] != 0 ||
-               playfield[*x1][*y1][1] != 0 ||
-               playfield[*x1][*y1][2] != 0)
+            if(playfield[x][y][0] != 0 ||
+               playfield[x][y][1] != 0 ||
+               playfield[x][y][2] != 0)
                 line++;
         }
-        if (line == height)
-            return x;
+        if (line == WALL_WIDTH)
+            return y;
     }
-
 
     return -1;
 }
@@ -194,26 +232,13 @@ int check_for_touch(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3], uint8_t stone
     for (y=0; y<STONE_SIZE; ++y) {
         for (x=0; x<STONE_SIZE; ++x) {
     	    if(stone[x][y][0] > 0 || stone[x][y][1] > 0 || stone[x][y][2] > 0){
-                if (x+stonex >= WALL_WIDTH && GRAVITY_X == 1){
+                if (y+stoney >= WALL_HEIGHT){
                     if (DEBUG) fprintf(stderr, "WALL ");
                     return 1;
-                }
-                if (x+stonex < 0 && GRAVITY_X == -1){
-                    if (DEBUG) fprintf(stderr, "WALL ");
-                    return 2;
-                }
-                if (y+stoney >= WALL_HEIGHT && GRAVITY_Y == 1){
-                    if (DEBUG) fprintf(stderr, "WALL ");
-                    return 3;
-                }
-                if (y+stoney < 0 && GRAVITY_Y == -1){
-                    if (DEBUG) fprintf(stderr, "WALL ");
-                    return 4;
                 }
 	    }
 	}
     }
-    
     
     for (y=0; y<STONE_SIZE; ++y) {
         for (x=0; x<STONE_SIZE; ++x) {
@@ -236,14 +261,20 @@ int check_for_touch(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3], uint8_t stone
 int main(int argc, char * argv[]) {
     uint8_t playfield [WALL_WIDTH][WALL_HEIGHT][3];
     uint8_t stone [STONE_SIZE][STONE_SIZE][3];
+    uint8_t stone_tmp [STONE_SIZE][STONE_SIZE][3];
     int stonex;
     int stoney;
+
+    int i, x, y;
+    int line_to_remove;
+    int err;
     
     stonex=STONE_X_START;
     stoney=STONE_Y_START;
     
     memset(playfield, 0, WALL_SIZE*3);
     memset(stone, 0, STONE_SIZE*STONE_SIZE*3);
+    memset(stone_tmp, 0, STONE_SIZE*STONE_SIZE*3);
     
     /*
     playfield [0][4][2]=255;
@@ -264,22 +295,25 @@ int main(int argc, char * argv[]) {
     playfield [1][1][0]=255;
     playfield [1][4][1]=255;  
     
-    stone [2][2][0]=255;
+    /*stone [2][2][0]=255;
     stone [2][3][0]=255;
     stone [1][3][0]=255;
-    stone [3][3][0]=255;
+    stone [3][3][0]=255;*/
+    stone [0][0][0]=255;
+    stone [1][0][0]=255;
+    stone [0][1][0]=255;
     
     
-    int i, x, y;
-    int line_to_remove;
-    int err;
 
     while(1) {
-	if (DEBUG) fprintf(stderr, "WHILE BEGIN\n\r");
-	
-	stonex=stonex+GRAVITY_X;
-	stoney=stoney+GRAVITY_Y;
+        
+        rotate90clock((uint8_t*)&stone[0][0], (uint8_t*)&stone_tmp[0][0],
+                      STONE_SIZE, STONE_SIZE);
+        memcpy(&stone[0][0], stone_tmp[0][0], STONE_SIZE*STONE_SIZE*3);
 
+	if (DEBUG) fprintf(stderr, "WHILE BEGIN\n\r");
+        
+//	stoney=stoney+1;
 	
 	if (err = check_for_touch(playfield, stone, stonex, stoney)){
 	    
@@ -288,9 +322,9 @@ int main(int argc, char * argv[]) {
 	    for (y=0; y<STONE_SIZE; ++y) {
 		for (x=0; x<STONE_SIZE; ++x) {
 		    if(stone[x][y][0] > 0 || stone[x][y][1] > 0 || stone[x][y][2] > 0){
-			playfield[x+stonex-GRAVITY_X][y+stoney-GRAVITY_Y][0]=stone[x][y][0];
-			playfield[x+stonex-GRAVITY_X][y+stoney-GRAVITY_Y][1]=stone[x][y][1];
-			playfield[x+stonex-GRAVITY_X][y+stoney-GRAVITY_Y][2]=stone[x][y][2];
+			playfield[x+stonex][y+stoney-1][0]=stone[x][y][0];
+			playfield[x+stonex][y+stoney-1][1]=stone[x][y][1];
+			playfield[x+stonex][y+stoney-1][2]=stone[x][y][2];
 		    }
 		}
 	    }
