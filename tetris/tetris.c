@@ -14,7 +14,7 @@
 #define KEY_LEFT  'a'
 #define KEY_RIGHT 'd'
 
-#define MAX_STONE_SIZE 4
+#define MAX_STONE_SIZE 5
 
 #define NUM_STONES 7
 
@@ -24,8 +24,6 @@
 
 typedef struct stone {
     uint8_t data[MAX_STONE_SIZE][MAX_STONE_SIZE][3];
-    int width;
-    int height;
     int x;
     int y;
 } stone_t;
@@ -36,19 +34,15 @@ struct stone stones[NUM_STONES] =  { {
           { {0, 255, 255}, {0, 255, 255}, {0, 255, 255}, {0, 255, 255}, {0,   0,   0} },
 	  { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} } },
-        1, // WIDTH
-        4, // HEIGHT
-        20, // Position X
-        20 // Position Y
+        0, // Position X
+        -5 // Position Y
     }, {
         { { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
 	  { {0,   0,   0}, {0,   0, 255}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0, 255}, {0,   0, 255}, {0,   0, 255}, {0,   0,   0} },
 	  { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} } }, 
-        2, // WIDTH
-        3, // HEIGHT
-        1, // Position X
+        0, // Position X
         -2 // Position Y
     }, {
         { { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
@@ -56,9 +50,7 @@ struct stone stones[NUM_STONES] =  { {
           { {0,   0,   0}, {255, 127, 0}, {255, 127, 0}, {255, 127, 0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} } }, 
-        2, // WIDTH
-        3, // HEIGHT
-        1, // Position X
+        0, // Position X
         -2 // Position Y
     }, {
         { { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
@@ -66,29 +58,23 @@ struct stone stones[NUM_STONES] =  { {
           { {0,   0,   0}, {255, 255, 0}, {255, 255, 0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} } }, 
-        2, // WIDTH
-        2, // HEIGHT
-        2, // Position X
+        0, // Position X
         -2 // Position Y
     }, {
-        { { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} }
+        { { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   255, 0}, {0,   255, 0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   255, 0}, {0,   255, 0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} } }, 
-        2, // WIDTH
-        3, // HEIGHT
-        1, // Position X
+        0, // Position X
         -2 // Position Y
     }, {
-        { { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} 
+        { { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {128, 0, 128}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {128, 0, 128}, {128, 0, 128}, {128, 0, 128}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} } }, 
-        2, // WIDTH
-        3, // HEIGHT
-        1, // Position X
+        0, // Position X
         -2 // Position Y
     }, {
         { { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
@@ -96,9 +82,7 @@ struct stone stones[NUM_STONES] =  { {
           { {0,   0,   0}, {0,   0,   0}, {255, 0,   0}, {255, 0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} } }, 
-        2, // WIDTH
-        3, // HEIGHT
-        1, // Position X
+        0, // Position X
         -2 // Position Y
     } };
 
@@ -134,11 +118,8 @@ struct stone rotate_stone(struct stone st) {
     int i;
     memset(new_st.data, 0, MAX_STONE_SIZE * MAX_STONE_SIZE * 3);
 
-    new_st.width = st.height;
-    new_st.height = st.width;
-
-    for (y=0; y<st.height; ++y) {
-        for (x=0; x<st.width; ++x) {
+    for (y=0; y<MAX_STONE_SIZE; ++y) {
+        for (x=0; x<MAX_STONE_SIZE; ++x) {
 /*
             new_st.data[x][y][0] = st.data[y][st.width-x-1][0];
             new_st.data[x][y][1] = st.data[y][st.width-x-1][1];
@@ -149,15 +130,14 @@ struct stone rotate_stone(struct stone st) {
             new_st.data[y][x][1] = st.data[st.height-y-1][st.width-x-1][1];
             new_st.data[y][x][2] = st.data[st.height-y-1][st.width-x-1][2];
 */
-            new_st.data[y][st.width-x-1][0] = st.data[x][y][0];
-            new_st.data[y][st.width-x-1][1] = st.data[x][y][1];
-            new_st.data[y][st.width-x-1][2] = st.data[x][y][2];
+            new_st.data[y][MAX_STONE_SIZE-x-1][0] = st.data[x][y][0];
+            new_st.data[y][MAX_STONE_SIZE-x-1][1] = st.data[x][y][1];
+            new_st.data[y][MAX_STONE_SIZE-x-1][2] = st.data[x][y][2];
         }
     }
     new_st.x = st.x;
     new_st.y = st.y;
 
-    fprintf(stderr, "w: %d, h: %d\n\r", new_st.width / 2, new_st.height / 2);
 /*
     if (new_st.width > new_st.height) {
         //new_st.x -= new_st.height / 2 + 1;
@@ -188,8 +168,8 @@ void paint_field(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
         }
     }
 
-    for (y=0; y<st->height; ++y) {
-        for (x=0; x<st->width; ++x) {
+    for (y=0; y<MAX_STONE_SIZE; ++y) {
+        for (x=0; x<MAX_STONE_SIZE; ++x) {
     	    if(st->data[x][y][0] > 0 ||
                st->data[x][y][1] > 0 ||
                st->data[x][y][2] > 0){
@@ -225,8 +205,8 @@ void send_field(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
         }
     }
     
-    for (y=0; y<st->height; ++y) {
-        for (x=0; x<st->width; ++x) {
+    for (y=0; y<MAX_STONE_SIZE; ++y) {
+        for (x=0; x<MAX_STONE_SIZE; ++x) {
             if(st->data[x][y][0] > 0 || st->data[x][y][1] > 0 || st->data[x][y][2] > 0){
                 if (x+st->x >= 0 && x+st->x < WALL_WIDTH && y+st->y >= 0 && y+st->y < WALL_HEIGHT){
                     for (i=0; i<3; ++i) {
@@ -324,8 +304,8 @@ int check_for_touch(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
                     struct stone * st) {
 
     int x, y;
-    for (y=0; y<st->height; ++y) {
-        for (x=0; x<st->width; ++x) {
+    for (y=0; y<MAX_STONE_SIZE; ++y) {
+        for (x=0; x<MAX_STONE_SIZE; ++x) {
     	    if(st->data[x][y][0] > 0 || st->data[x][y][1] > 0 || st->data[x][y][2] > 0) {
                 if (y+st->y >= WALL_HEIGHT){
                     if (DEBUG) fprintf(stderr, "WALL ");
@@ -335,8 +315,8 @@ int check_for_touch(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
 	}
     }
     
-    for (y=0; y<st->height; ++y) {
-        for (x=0; x<st->width; ++x) {
+    for (y=0; y<MAX_STONE_SIZE; ++y) {
+        for (x=0; x<MAX_STONE_SIZE; ++x) {
 	    if(st->data[x][y][0] != 0 || st->data[x][y][1] != 0 || st->data[x][y][2] != 0){
 		if(st->x+x >= 0 && st->x+x < WALL_WIDTH && st->y+y >= 0 && st->y+y < WALL_HEIGHT){
                     //if (DEBUG) fprintf(stderr, "X:%d Y:%d\n\r", st->x+x, st->y+y);
@@ -357,8 +337,8 @@ int check_for_touch(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
 
 int allow_rotate(struct stone * st) {
     int x, y;
-    for (y=0; y<st->height; ++y) {
-        for (x=0; x<st->width; ++x) {
+    for (y=0; y<MAX_STONE_SIZE; ++y) {
+        for (x=0; x<MAX_STONE_SIZE; ++x) {
             if(st->data[x][y][0] > 0 || st->data[x][y][1] > 0 || st->data[x][y][2] > 0) {
                 if (x+st->x < 0 || x+st->x >= WALL_WIDTH)
                     return 0;
@@ -418,27 +398,26 @@ int main(int argc, char * argv[]) {
 
         rotated_stone = rotate_stone(st);
 
-        //if (allow_rotate(&rotated_stone)) {
+        if (allow_rotate(&rotated_stone)) {
             if (!check_for_touch(playfield, &rotated_stone))
                 st = rotated_stone;
             else
                 touched = 1;
-            //}
+        }
 
         moved_stone = st;
-        //moved_stone.y++;
+        moved_stone.y++;
 
         if (!check_for_touch(playfield, &moved_stone))
             st = moved_stone;
         else
             touched = 1;
 
-	//if (err = check_for_touch(playfield, &st)){
         if (touched) {
 	    if (DEBUG) fprintf(stderr, "TOUCHED WITH RETURN\n\r");
 
-	    for (y=0; y<st.height; ++y) {
-		for (x=0; x<st.width; ++x) {
+	    for (y=0; y<MAX_STONE_SIZE; ++y) {
+		for (x=0; x<MAX_STONE_SIZE; ++x) {
 		    if(st.data[x][y][0] > 0 ||
                        st.data[x][y][1] > 0 ||
                        st.data[x][y][2] > 0){
@@ -448,8 +427,7 @@ int main(int argc, char * argv[]) {
 		    }
 		}
 	    }
-            //st = stones[rand() % NUM_STONES];
-            st = stones[0];
+            st = stones[rand() % NUM_STONES];
         }
 	
 	while ((line_to_remove = check_for_ready_line(playfield)) != -1){
