@@ -1,13 +1,15 @@
-// Printf snake
+// Blinkenwall snake
 
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define WALL_WIDTH 9
+#define WALL_WIDTH  9
 #define WALL_HEIGHT 5
 #define WALL_SIZE WALL_WIDTH * WALL_HEIGHT
+
+#define FRAME_DELAY 300000
 
 #define KEY_UP    'w'
 #define KEY_DOWN  's'
@@ -60,25 +62,18 @@ void paint_field(struct coord * snake, int snake_length,
 
 void send_field(struct coord * snake, int snake_length,
                 struct coord food) {
-    uint8_t field[WALL_WIDTH][WALL_HEIGHT][3];
+    uint8_t field[WALL_HEIGHT][WALL_WIDTH][3];
     int i, x, y;
 
     memset(field, 0, WALL_SIZE * 3);
 
-    field[food.x][food.y][0] = 255;
+    field[food.y][food.x][0] = 255;
 
-    field[snake[0].x][snake[0].y][1] = 255;
-    field[snake[0].x][snake[0].y][2] = 120;
+    field[snake[0].y][snake[0].x][2] = 255;
     for (i=1; i<snake_length; ++i)
-        field[snake[i].x][snake[i].y][1] = 255;
+        field[snake[i].y][snake[i].x][1] = 255;
 
-    for (y=0; y<WALL_HEIGHT; ++y) {
-        for (x=0; x<WALL_WIDTH; ++x) {
-            putchar(field[x][y][0]);
-            putchar(field[x][y][1]);
-            putchar(field[x][y][2]);
-        }
-    }
+    fwrite(field, 1, WALL_WIDTH*WALL_HEIGHT*3, stdout);
     fflush(stdout);
 }
 
@@ -112,45 +107,43 @@ int main(int argc, char * argv[]) {
         int input;
         int retval = 0;
 
-        for (i=0; i<20; ++i) {
-            FD_ZERO(&readfds);
-            FD_SET(0, &readfds);
-            tv.tv_sec = 0;
-            tv.tv_usec = 25000;
+        FD_ZERO(&readfds);
+        FD_SET(0, &readfds);
+        tv.tv_sec = 0;
+        tv.tv_usec = FRAME_DELAY;
 
-            retval = select(1, &readfds, NULL, NULL, &tv);
+        retval = select(1, &readfds, NULL, NULL, &tv);
 
-            if (retval > 0) {
-                int input = getchar();
+        if (retval > 0) {
+            int input = getchar();
 
-                switch(input) {
-                case KEY_UP:
-                    if (dir.y != 1) {
-                        dir.x = 0;
-                        dir.y = -1;
-                    }
-                    break;
-                case KEY_DOWN:
-                    if (dir.y != -1) {
-                        dir.x = 0;
-                        dir.y = 1;
-                    }
-                    break;
-                case KEY_LEFT:
-                    if (dir.x != 1) {
-                        dir.x = -1;
-                        dir.y = 0;
-                    }
-                    break;
-                case KEY_RIGHT:
-                    if (dir.x != -1) {
-                        dir.x = 1;
-                        dir.y = 0;
-                    }
-                    break;
-                default:
-                    break;
+            switch(input) {
+            case KEY_UP:
+                if (dir.y != 1) {
+                    dir.x = 0;
+                    dir.y = -1;
                 }
+                break;
+            case KEY_DOWN:
+                if (dir.y != -1) {
+                    dir.x = 0;
+                    dir.y = 1;
+                }
+                break;
+            case KEY_LEFT:
+                if (dir.x != 1) {
+                    dir.x = -1;
+                    dir.y = 0;
+                }
+                break;
+            case KEY_RIGHT:
+                if (dir.x != -1) {
+                    dir.x = 1;
+                    dir.y = 0;
+                }
+                break;
+            default:
+                break;
             }
         }
 
