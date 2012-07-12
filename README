@@ -6,4 +6,14 @@ So far in this repository:
 General library to send data to the wall, and utility to read
 RGB data from stdin and transmit to the wall.
 
+- blinkenwall_show
+a tiny programm to simulate the blinkenwall, require stdin data in ppm rgb
+
+-tetris
+tetris for the blinkenwall with stdout
+
+-snake
+snake for the blinkenwall with stdout
+
+
 see also: https://metalab.at/wiki/Blinkenwall.com
