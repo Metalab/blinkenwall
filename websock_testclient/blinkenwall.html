@@ -3,60 +3,83 @@
 <head>
 	<meta charset="utf-8">
 	<title>Blinkenwall Web Client</title>
+	<link href="css/bootstrap.min.css" rel="stylesheet">
+	<link href="css/blinkenwall.css" rel="stylesheet">
+	<script type="text/javascript" src="js/jquery-1.7.2.min.js"></script>
 </head>
 <body>
+	<div class="navbar">
+		<div class="navbar-inner">
+			<div class="container">
+				<a class="brand" href="#">Blinkenwall</a>
+			</div>
+		</div>
+	</div>
+
 	<div id="container">
-	
 		<div id="main-container">
-		
 			<div id="webSocketSupp" style="display:none;">
-				<div style="float: left; width: 600px; margin-left: 10px; position:relative; top: 8px;">
+				<div class="alert alert-success">
+					<button class="close" data-dismiss="alert">×</button>
 					This browser supports WebSocket.
 				</div>
-				<div class="clearfix"></div>
 			</div>
 			
 			<div id="noWebSocketSupp" style="display:none;">
-				<div style="float: left; width: 600px; margin-left: 10px;">
-					<p>Uh-oh, the browser you're using doesn't have native support for WebSocket. That means you can't run this demo.</p>
+				<div class="alert alert-error">
+					<button class="close" data-dismiss="alert">×</button>
+					<strong>Uh-oh, the browser you're using doesn't have native support for WebSocket. That means you can't run this demo.</strong>
 					<p>The following link lists the browsers that support WebSocket:</p>
 					<p><a href="http://caniuse.com/#feat=websockets">http://caniuse.com/#feat=websockets</a></p>
 				</div>
-				<div class="clearfix"></div>
 			</div>
 			
-			<div id="echo">
-				<div id="echo-config" style="float: left;">
-					<strong>Location:</strong><br>
-					<input id="wsUri" size="35">
-					<br>
-					<button id="connect">Connect</button>
-					<button id="disconnect">Disconnect</button>
-					<br>
-					<br>
-					<strong>Message:</strong><br>
-					<input id="sendMessage" size="35" value="Rock it with HTML5 WebSocket">
-					<br>
-					<button id="send" class="wsButton">Send</button>
-					
-					<div>
-						<a href="javascript:domySend()">Run WebSocket</a>
-						<a href="javascript:domySend2()">Run WebSocket2</a>
+			<form class="form form-horizontal" id="mainform">
+				<fieldset>
+					<div class="control-group">
+						<label class="control-label" for="wsUri">Location:</label>
+						<div class="controls">
+							<input type="text" id="wsUri" size="35">
+						</div>
 					</div>
-					
-					
-					<div id="echo-log" style="float: left; margin-left: 20px; padding-left: 20px; width: 350px; border-left: solid 1px #cccccc;"> <strong>Log:</strong>
-					<div id="consoleLog"></div>
-					<button id="clearLogBut" style="position: relative; top: 3px;">Clear log</button>
-				</div>
-				<div class="clearfix"></div>
+					<div class="control-group">
+						<div class="controls">
+							<button class="btn btn-primary" id="connect">Connect</button>
+							<button class="btn" id="disconnect">Disconnect</button>
+						</div>
+					</div>
+					<div class="control-group">
+						<label class="control-label" for="wsUri">Message:</label>
+						<div class="controls">
+							<input type="text" id="sendMessage" size="35" value="Rock it with HTML5 WebSocket">
+						</div>
+					</div>
+					<div class="control-group">
+						<div class="controls">
+							<button id="send" class="btn btn-primary">Send</button>
+						</div>
+					</div>
+					<div class="control-group">
+						<div class="controls">
+							<a class="btn btn-inverse" href="javascript:domySend()">Run WebSocket</a>
+							<a class="btn btn-inverse" href="javascript:domySend2()">Run WebSocket2</a>
+						</div>
+					</div>
+				</fieldset>
+			</form>
+			<div id="log" class="well">
+				<h3>Log:</h3>
+				<table class="table">
+					<tbody id="consoleLog">
+					</tbody>
+				</table>
+				<button id="clearLogBut" class="btn btn-danger">Clear log</button>
 			</div>
-			
-			<div class="codePanel"></div>
 			</div> <!-- #main -->
 		</div> <!-- #main-container -->
 	</div> <!-- #container -->
 	
-	<script type="text/javascript" src="blinkenwall.js"></script>
+	<script type="text/javascript" src="js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="js/blinkenwall.js"></script>
 </body>
 </html>

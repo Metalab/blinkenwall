@@ -1,13 +1,6 @@
-var wsUri;
-var consoleLog;
-var connectBut;
-var disconnectBut;
-var sendMessage;
-var sendBut;
-var clearLogBut;
+var websocket;
 
-function echoHandlePageLoad()
-{
+$(function() {
 	if (window.WebSocket)
 	{
 		document.getElementById("webSocketSupp").style.display = "block";
@@ -17,34 +10,19 @@ function echoHandlePageLoad()
 		document.getElementById("noWebSocketSupp").style.display = "block";
 	}
 	
-	wsUri = document.getElementById("wsUri");
-	wsUri.value = "ws://10.20.30.193:15632/raw";
+	$("#wsUri").val("ws://10.20.30.193:15632/raw");
 	
-	connectBut = document.getElementById("connect");
-	connectBut.onclick = doConnect;
-	
-	disconnectBut = document.getElementById("disconnect");
-	disconnectBut.onclick = doDisconnect;
-	
-	sendMessage = document.getElementById("sendMessage");
-	
-	sendBut = document.getElementById("send");
-	sendBut.onclick = doSend;
-	
-	consoleLog = document.getElementById("consoleLog");
-	
-	clearLogBut = document.getElementById("clearLogBut");
-	clearLogBut.onclick = clearLog;
+	$("#connect").click(doConnect);
+	$("#disconnect").click(doDisconnect);
+	$("#send").click(doSend);
+	$("#clearLogBut").click(clearLog);
 	
 	setGuiConnected(false);
-	
-	document.getElementById("disconnect").onclick = doDisconnect;
-	document.getElementById("send").onclick = doSend;
-	
-}
+});
 
 function doConnect()
 {
+	console.log("doConnect");
 	if (window.MozWebSocket)
 	{
 		logToConsole('<span style="color: red;"><strong>Info:</strong> This browser supports WebSocket using the MozWebSocket constructor</span>');
@@ -53,11 +31,11 @@ function doConnect()
 	else if (!window.WebSocket)
 	{
 		logToConsole('<span style="color: red;"><strong>Error:</strong> This browser does not have support for WebSocket</span>');
-		return;
+		return false;
 	}
 	
 	// prefer text messages
-	var uri = wsUri.value;
+	var uri = $("#wsUri").val();
 	if (uri.indexOf("?") == -1) {
 		//uri += "?encoding=text";
 	} else {
@@ -68,17 +46,23 @@ function doConnect()
 	websocket.onclose = function(evt) { onClose(evt) };
 	websocket.onmessage = function(evt) { onMessage(evt) };
 	websocket.onerror = function(evt) { onError(evt) };
+	
+	return false;
 }
 
 function doDisconnect()
 {
 	websocket.close()
+
+	return false;
 }
 
 function doSend()
 {
 	logToConsole("SENT: " + sendMessage.value);
 	websocket.send(sendMessage.value);
+
+	return false;
 }
 
   
@@ -104,6 +88,8 @@ function domySend()
 	}
 	logToConsole("SENT MY: " + tmp.join(" "));
 	websocket.send(tmp.join(" "));
+
+	return false;
 }
   
   
@@ -130,23 +116,26 @@ function domySend2()
 	}
 	logToConsole("SENT MY: " + tmp.join(" "));
 	websocket.send(tmp.join(" "));
+
+	return false;
 }
   
   
   
 function logToConsole(message)
 {
-	var pre = document.createElement("p");
-	pre.style.wordWrap = "break-word";
-	pre.innerHTML = message;
-	consoleLog.appendChild(pre);
+	var tr = $('<tr></tr>');
+	$("<td></td>").html(message).appendTo(tr);
+	tr.appendTo("#consoleLog");
 	
-	while (consoleLog.childNodes.length > 50)
+	var consoleLog = $("#consoleLog");
+	
+	while (consoleLog.children('tr').length > 50)
 	{
-		consoleLog.removeChild(consoleLog.firstChild);
+		consoleLog.removeChild(consoleLog.firstChild('tr'));
 	}
 	
-	consoleLog.scrollTop = consoleLog.scrollHeight;
+	consoleLog.scrollTop(consoleLog.scrollHeight);
 }
   
 function onOpen(evt)
@@ -173,19 +162,14 @@ function onError(evt)
   
 function setGuiConnected(isConnected)
 {
-	wsUri.disabled = isConnected;
-	connectBut.disabled = isConnected;
-	disconnectBut.disabled = !isConnected;
-	sendMessage.disabled = !isConnected;
-	sendBut.disabled = !isConnected;
+	$('#wsUri').prop("disabled", isConnected);
+	$('#connect').prop("disabled", isConnected);
+	$('#disconnect').prop("disabled", !isConnected);
+	$('#sendMessage').prop("disabled", !isConnected);
+	$('#send').prop("disabled", !isConnected);
 }
 	
 function clearLog()
 {
-	while (consoleLog.childNodes.length > 0)
-	{
-		consoleLog.removeChild(consoleLog.lastChild);
-	}
+	$("#consoleLog").empty();
 }
-  
-window.addEventListener("load", echoHandlePageLoad, false);
