@@ -10,14 +10,23 @@
 
   function echoHandlePageLoad()
   {
+    if (window.WebSocket)
+    {
+      document.getElementById("webSocketSupp").style.display = "block";
+    }
+    else
+    {
+      document.getElementById("noWebSocketSupp").style.display = "block";
+    }
 
-
-
+    secureCb = document.getElementById("secureCb");
+    secureCb.checked = false;
+    secureCb.onclick = toggleTls;
     
-    
+    secureCbLabel = document.getElementById("secureCbLabel")
     
     wsUri = document.getElementById("wsUri");
-    SetURI();
+    toggleTls();
     
     connectBut = document.getElementById("connect");
     connectBut.onclick = doConnect;
@@ -42,16 +51,36 @@
 
   }
 
-  function SetURI()
+  function toggleTls()
   {
-   
+    var wsPort = (window.location.port.toString() === "" ? "" : ":"+window.location.port)
+    if (wsUri.value === "") {
+        wsUri.value = "ws://" + window.location.hostname.replace("www", "echo") + wsPort;
 	wsUri.value = "ws://10.20.30.193:15632/raw";
-
+    }
+    
+    if (secureCb.checked)
+    {
+      wsUri.value = wsUri.value.replace("ws:", "wss:");
+    }
+    else
+    {
+      wsUri.value = wsUri.value.replace ("wss:", "ws:");
+    }
   }
   
   function doConnect()
   {
-
+    if (window.MozWebSocket)
+    {
+        logToConsole('<span style="color: red;"><strong>Info:</strong> This browser supports WebSocket using the MozWebSocket constructor</span>');
+        window.WebSocket = window.MozWebSocket;
+    }
+    else if (!window.WebSocket)
+    {
+        logToConsole('<span style="color: red;"><strong>Error:</strong> This browser does not have support for WebSocket</span>');
+        return;
+    }
 
     // prefer text messages
     var uri = wsUri.value;
@@ -136,7 +165,7 @@ tmp=tmp+0x00.toString(16)+" ";
   {
     var pre = document.createElement("p");
     pre.style.wordWrap = "break-word";
-    //pre.innerHTML = getSecureTag()+message;
+    pre.innerHTML = getSecureTag()+message;
     consoleLog.appendChild(pre);
 
     while (consoleLog.childNodes.length > 50)
@@ -176,13 +205,13 @@ tmp=tmp+0x00.toString(16)+" ";
     disconnectBut.disabled = !isConnected;
     sendMessage.disabled = !isConnected;
     sendBut.disabled = !isConnected;
-   // secureCb.disabled = isConnected;
+    secureCb.disabled = isConnected;
     var labelColor = "black";
     if (isConnected)
     {
       labelColor = "#999999";
     }
-     
+     secureCbLabel.style.color = labelColor;
     
   }
 	
@@ -194,7 +223,7 @@ tmp=tmp+0x00.toString(16)+" ";
 		}
 	}
 	
-/*	function getSecureTag()
+	function getSecureTag()
 	{
 		if (secureCb.checked)
 		{
@@ -204,6 +233,6 @@ tmp=tmp+0x00.toString(16)+" ";
 		{
 			return '';
 		}
-	}*/
+	}
   
   window.addEventListener("load", echoHandlePageLoad, false);
