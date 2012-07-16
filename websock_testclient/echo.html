@@ -1,0 +1,61 @@
+<!doctype html>  
+
+<html lang="en" class="no-js">
+<head>
+
+
+</head>
+
+<body>
+
+    <div id="main-container">
+       
+        <div id="echo">
+          <div id="echo-config" style="float: left;">
+            <strong>Location:</strong><br>
+            <input id="wsUri" size="35">
+            <br>
+            
+            
+            <button id="connect">Connect</button>
+            <button id="disconnect">Disconnect</button>
+            <br>
+            <br>
+            <strong>Message:</strong><br>
+            <input id="sendMessage" size="35" value="Rock it with HTML5 WebSocket">
+            <br>
+            <button id="send" class="wsButton">Send</button>
+          
+
+
+	<div>
+	    <a href="javascript:domySend()">Run WebSocket</a>
+	    <a href="javascript:domySend2()">Run WebSocket2</a>
+	</div>
+
+
+          <div id="echo-log" style="float: left; margin-left: 20px; padding-left: 20px; width: 350px; border-left: solid 1px #cccccc;"> <strong>Log:</strong>
+            <div id="consoleLog"></div>
+            <button id="clearLogBut" style="position: relative; top: 3px;">Clear log</button>
+          </div>
+          <div class="clearfix"></div>
+        </div>
+    
+        
+
+
+      </div>
+    
+    </div> 
+    
+
+
+   
+
+  </div>
+
+  <script type="text/javascript" src="echo.js"></script>
+
+</body>
+
+</html>
