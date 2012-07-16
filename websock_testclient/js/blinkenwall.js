@@ -13,13 +13,6 @@ Blinkenwall = function() {
 			return false;
 		}
 		
-		// prefer text messages
-		var uri = $("#wsUri").val();
-		if (uri.indexOf("?") == -1) {
-			//uri += "?encoding=text";
-		} else {
-			//uri += "&encoding=text";
-		}
 		var that = this;
 		this.websocket = new WebSocket(uri);
 		this.websocket.onopen = function(evt) { that.onOpen(evt) };
