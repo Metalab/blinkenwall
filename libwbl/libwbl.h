@@ -2,7 +2,7 @@
  * Listens on TCP/IP port, receives commands using
  * the blinkenwall control protocol.
  * 
- * Code by Georg <georg.lippitsch@gmx.at> and Wolfgang <wsys@wsys.at>
+ * Code by Georg <georg.lippitsch@gmx.at> and Wolfgang <wsys@gmx.at>
  */
 
 #include <stdint.h>
@@ -15,6 +15,7 @@
 #define BW_READ_BUF_SIZE  2048
 #define BW_CTRL_RESOURCE  "/blinkenwallcontrol"
 
+#define BW_CMD_DISCONNECT        -1
 #define BW_CMD_NONE             0x0
 #define BW_CMD_UP_PRESSED       0x1
 #define BW_CMD_DOWN_PRESSED     0x2
@@ -66,15 +67,24 @@ void bw_socket_close(BwlSocketContext * socket_context);
  * @return 0 on success, -1 on failure or timeout
  * or NULL on failure.
  */
-int bw_wait_for_connections(BwlSocketContext * socket_context,
-                            int timeout);
+int bw_wait_for_connections_timeout(BwlSocketContext * socket_context,
+                                    int timeout);
+
+/**
+ * Listens on port for connections, blocks until a client
+ * makes a new connection.
+ * @return 0 on success, -1 on failure or timeout
+ * or NULL on failure.
+ */
+int bw_wait_for_connections(BwlSocketContext * socket_context);
 
 /**
  * Blocks until a new control command is received,
  * and returns the command.
  * @return 0 on success, -1 on failure
  */
-int bw_get_cmd_block(BwlSocketContext * socket_context);
+int bw_get_cmd_block(BwlSocketContext * socket_context,
+                     char ** uuid);
 
 /**
  * Blocks until a new control command is received,
@@ -84,6 +94,7 @@ int bw_get_cmd_block(BwlSocketContext * socket_context);
  or BW_CMD_NONE if the timeout has occured.
  */
 int bw_get_cmd_block_timeout(BwlSocketContext * socket_context,
+                             char ** uuid,
                              int timeout);
 
 #endif

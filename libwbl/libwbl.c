@@ -2,7 +2,7 @@
  * Listens on TCP/IP port, receives commands using
  * the blinkenwall control protocol.
  * 
- * Code by Georg <georg.lippitsch@gmx.at> and Wolfgang <wsys@wsys.at>
+ * Code by Georg <georg.lippitsch@gmx.at> and Wolfgang <wsys@gmx.at>
  */
 
 #include <stdio.h>
@@ -86,8 +86,8 @@ void bw_socket_close(BwlSocketContext * socket_context)
     free(socket_context);
 }
 
-int bw_wait_for_connections(BwlSocketContext * sc,
-                            int timeout) {
+int bw_wait_for_connections_timeout(BwlSocketContext * sc,
+                                    int timeout) {
     fd_set acceptfds;
     struct timeval tv;
     int clientsocket;
@@ -101,12 +101,12 @@ int bw_wait_for_connections(BwlSocketContext * sc,
     int written = 0;
 
     FD_ZERO(&acceptfds);
-    FD_SET(0, &acceptfds);
+    FD_SET(sc->fd_listen, &acceptfds);
 
     tv.tv_sec = timeout;
     tv.tv_usec = 0;
 
-    result = select(sc->fd_listen,
+    result = select(sc->fd_listen+1,
                     &acceptfds, NULL, NULL, &tv);
 
     if (result <= 0)
@@ -174,24 +174,30 @@ int bw_wait_for_connections(BwlSocketContext * sc,
     return 0;
 }
 
-int bw_get_cmd_block(BwlSocketContext * sc)
+int bw_wait_for_connections(BwlSocketContext * sc)
+{
+    return bw_wait_for_connections_timeout(sc,
+                                           BW_DEFAULTTIMEOUT);
+}
+
+int bw_get_cmd_block(BwlSocketContext * sc, char ** uuid)
 {
     size_t num_read = 0;
     enum ws_frame_type frame_type = WS_INCOMPLETE_FRAME;
+    size_t data_len;
+    size_t out_len = BW_READ_BUF_SIZE;
+    uint8_t *data;
 
     if (!sc->connected)
         return BW_CMD_NONE;
 
     while (frame_type == WS_INCOMPLETE_FRAME) {
-        size_t data_len;
-        uint8_t *data;
         int read;
 
         read = recv(sc->fd_accept, sc->buffer+num_read,
                     BW_READ_BUF_SIZE-num_read, 0);
         if (read <= 0) {
-            fprintf(stderr, "Recv failed.\n");
-            return BW_CMD_NONE;
+            return BW_CMD_DISCONNECT;
         }
         num_read += read;
 
@@ -202,15 +208,15 @@ int bw_get_cmd_block(BwlSocketContext * sc)
         if (frame_type == WS_INCOMPLETE_FRAME &&
             num_read == BW_READ_BUF_SIZE) {
             fprintf(stderr, "Buffer too small\n");
-            return -1;
+            return BW_CMD_NONE;
         } else if (frame_type == WS_CLOSING_FRAME) {
             send(sc->fd_accept, "\xFF\x00", 2, 0);
-            break;
+            return BW_CMD_DISCONNECT;
         } else if (frame_type == WS_ERROR_FRAME) {
             fprintf(stderr, "Error in incoming frame\n");
-            return -1;
+            return BW_CMD_NONE;
         } else if (frame_type == WS_TEXT_FRAME) {
-            size_t out_len = BW_READ_BUF_SIZE;
+            out_len = BW_READ_BUF_SIZE;
             char * pch;
             uint8_t cmd;
 
@@ -223,13 +229,16 @@ int bw_get_cmd_block(BwlSocketContext * sc)
 
             sc->buffer[out_len-1] = '\0';
 
-            if (strncmp((char*)sc->buffer, "key", 3) != 0) {
+            if (strncmp((char*)sc->buffer, "key", 3) == 0) {
                 fprintf(stderr, "Invalid command\n");
                 return BW_CMD_NONE;
             }
 
             strtok((char*)sc->buffer+1, " ");
-            strtok(NULL, " ");
+            pch = strtok(NULL, " ");
+            if (uuid) {
+                *uuid = pch;
+            }
             pch = strtok(NULL, " ");
 
             if (!pch) {
@@ -253,6 +262,7 @@ int bw_get_cmd_block(BwlSocketContext * sc)
 }
 
 int bw_get_cmd_block_timeout(BwlSocketContext * sc,
+                             char ** uuid,
                              int timeout)
 {
     fd_set recvfds;
@@ -260,16 +270,16 @@ int bw_get_cmd_block_timeout(BwlSocketContext * sc,
     int result;
 
     FD_ZERO(&recvfds);
-    FD_SET(0, &recvfds);
+    FD_SET(sc->fd_accept, &recvfds);
 
     tv.tv_sec = timeout / 1000;
     tv.tv_usec = (timeout % 1000) * 1000;
 
-    result = select(sc->fd_listen,
+    result = select(sc->fd_accept+1,
                     &recvfds, NULL, NULL, &tv);
 
     if (result <= 0)
         return BW_CMD_NONE;
 
-    return bw_get_cmd_block(sc);
+    return bw_get_cmd_block(sc, uuid);
 }
