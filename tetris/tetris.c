@@ -201,7 +201,7 @@ void move_playfield_down(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
 
     //playfield um eins nach gravity
     memcpy(playfield_tmp, playfield, WALL_SIZE * 3);
-    for (y=1; y<WALL_HEIGHT; ++y) {
+    for (y=line; y>0; --y) {
         for (x=0; x<WALL_WIDTH; ++x) {
             playfield[x][y][0]=playfield_tmp[x][y-1][0];
             playfield[x][y][1]=playfield_tmp[x][y-1][1];
@@ -224,7 +224,7 @@ int check_for_ready_line(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3]){
 
     int x, y, line;
  
-    for (y=0; y<WALL_HEIGHT; ++y) {
+    for (y=WALL_HEIGHT-1; y>=0; --y) {
         line=0;
         for (x=0; x<WALL_WIDTH; ++x) {
             if(playfield[x][y][0] != 0 ||
@@ -239,11 +239,8 @@ int check_for_ready_line(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3]){
     return -1;
 }
 
-
-
 int check_for_touch(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
                     struct stone * st) {
-
     int x, y;
     for (y=0; y<MAX_STONE_SIZE; ++y) {
         for (x=0; x<MAX_STONE_SIZE; ++x) {
@@ -255,7 +252,7 @@ int check_for_touch(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
             }
         }
     }
-    
+
     for (y=0; y<MAX_STONE_SIZE; ++y) {
         for (x=0; x<MAX_STONE_SIZE; ++x) {
             if(st->data[x][y][0] != 0 || st->data[x][y][1] != 0 || st->data[x][y][2] != 0) {
@@ -272,11 +269,11 @@ int check_for_touch(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
         }
     }
     
-    return 0;
-  
+    return 0;  
 }
 
-int allow_rotate(struct stone * st) {
+int allow_movement(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
+                   struct stone * st) {
     int x, y;
     for (y=0; y<MAX_STONE_SIZE; ++y) {
         for (x=0; x<MAX_STONE_SIZE; ++x) {
@@ -284,6 +281,10 @@ int allow_rotate(struct stone * st) {
                st->data[x][y][1] > 0 ||
                st->data[x][y][2] > 0) {
                 if (x+st->x < 0 || x+st->x >= WALL_WIDTH)
+                    return 0;
+                if(playfield[st->x+x][st->y+y][0] != 0 ||
+                   playfield[st->x+x][st->y+y][1] != 0 ||
+                   playfield[st->x+x][st->y+y][2] != 0)
                     return 0;
             }
         }
@@ -336,7 +337,7 @@ int main(int argc, char * argv[]) {
     }
 
     srand(time(NULL));
- 
+
     memset(playfield, 0, WALL_SIZE * 3);
     memset(st.data, 0, MAX_STONE_SIZE * MAX_STONE_SIZE*3);
     memset(st_tmp.data, 0, MAX_STONE_SIZE * MAX_STONE_SIZE*3);
@@ -378,10 +379,10 @@ int main(int argc, char * argv[]) {
 */
 
         switch(key) {
-        case BW_CMD_BUTTON1_PRESSED:
+        case BW_CMD_BUTTON2_PRESSED:
             rotated_stone = rotate_stone(st);
             break;
-        case BW_CMD_BUTTON2_PRESSED:
+        case BW_CMD_BUTTON1_PRESSED:
             for (i=0; i<3; ++i)
                 rotated_stone = rotate_stone(st);
             break;
@@ -400,14 +401,14 @@ int main(int argc, char * argv[]) {
             rotated_stone = st;
         }
         
-        if (allow_rotate(&rotated_stone)) {
+        if (allow_movement(playfield, &rotated_stone)) {
             paint = 1;
             if (!check_for_touch(playfield, &rotated_stone))
                 st = rotated_stone;
             else
                 touched = 1;
         }
-        
+
         if ((frame++ % (1000 / SLEEP_TIME)) == 0) {
             
             moved_stone = st;
@@ -421,7 +422,7 @@ int main(int argc, char * argv[]) {
             if (touched) {
                 if (DEBUG) fprintf(stderr, "TOUCHED WITH RETURN\n\r");
 
-                for (y=0; y<MAX_STONE_SIZE; ++y) {
+                for (y=MAX_STONE_SIZE-1; y>=0; --y) {
                     for (x=0; x<MAX_STONE_SIZE; ++x) {
                         if(st.data[x][y][0] > 0 || st.data[x][y][1] > 0 || st.data[x][y][2] > 0) {
                             if (y+st.y < 0){
@@ -432,7 +433,7 @@ int main(int argc, char * argv[]) {
                     }
                 }
 
-                for (y=0; y<MAX_STONE_SIZE; ++y) {
+                for (y=MAX_STONE_SIZE-1; y>=0; --y) {
                     for (x=0; x<MAX_STONE_SIZE; ++x) {
                         if(st.data[x][y][0] > 0 ||
                            st.data[x][y][1] > 0 ||
@@ -459,7 +460,7 @@ int main(int argc, char * argv[]) {
             send_field(playfield, &st);
         }
     }
-    
+
 exit:
     printf("\n\r");
     //system ("/bin/stty echo cooked");
