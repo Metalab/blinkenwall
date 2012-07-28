@@ -14,7 +14,15 @@ int main(int argc, char * argv[])
 
     sc = bw_socket_open();
 
-    bw_wait_for_connections(sc);
+    if (!sc) {
+        fprintf(stderr, "Error opening socket\n");
+        return 1;
+    }
+
+    if (bw_wait_for_connections(sc) != 0) {
+        fprintf(stderr, "Error when waiting for connection\n");
+        return 1;
+    }
 
     while((cmd = bw_get_cmd_block(sc, &uuid)) !=
           BW_CMD_DISCONNECT) {
