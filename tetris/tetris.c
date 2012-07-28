@@ -34,21 +34,21 @@ struct stone stones[NUM_STONES] =  { {
         { { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
           { {0, 255, 255}, {0, 255, 255}, {0, 255, 255}, {0, 255, 255}, {0,   0,   0} },
-	  { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
+          { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} } },
         0, // Position X
         -5 // Position Y
     }, {
         { { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
-	  { {0,   0,   0}, {0,   0, 255}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
+          { {0,   0,   0}, {0,   0, 255}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0, 255}, {0,   0, 255}, {0,   0, 255}, {0,   0,   0} },
-	  { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
+          { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} } }, 
         0, // Position X
         -2 // Position Y
     }, {
         { { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
-	  { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {255, 127, 0}, {0,   0,   0} },
+          { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {255, 127, 0}, {0,   0,   0} },
           { {0,   0,   0}, {255, 127, 0}, {255, 127, 0}, {255, 127, 0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} } }, 
@@ -56,7 +56,7 @@ struct stone stones[NUM_STONES] =  { {
         -2 // Position Y
     }, {
         { { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
-	  { {0,   0,   0}, {255, 255, 0}, {255, 255, 0}, {0,   0,   0}, {0,   0,   0} },
+          { {0,   0,   0}, {255, 255, 0}, {255, 255, 0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {255, 255, 0}, {255, 255, 0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} } }, 
@@ -80,39 +80,13 @@ struct stone stones[NUM_STONES] =  { {
         -2 // Position Y
     }, {
         { { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
-	  { {0,   0,   0}, {255, 0,   0}, {255, 0,   0}, {0,   0,   0}, {0,   0,   0} },
+          { {0,   0,   0}, {255, 0,   0}, {255, 0,   0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {255, 0,   0}, {255, 0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
           { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} } }, 
         0, // Position X
         -2 // Position Y
     } };
-
-/*
-void rotate90clock(uint8_t * infield, uint8_t * outfield,
-              int w_in,  int h_in) {
-    int x, y;
-    for (x=0; x<h_in; ++x) {
-        for (y=0; y<w_in; ++y) {
-            outfield[x*3+y*w_in*3] = infield[(w_in-y-1)*3+x*w_in*3];
-            outfield[x*3+y*w_in*3+1] = infield[(w_in-y-1)*3+x*w_in*3+1];
-            outfield[x*3+y*w_in*3+2] = infield[(w_in-y-1)*3+x*w_in*3+2];
-        }
-    }
-}
-
-void rotate90cclock(uint8_t * infield, uint8_t * outfield,
-              int w_in,  int h_in) {
-    int x, y;
-    for (x=0; x<h_in; ++x) {
-        for (y=0; y<w_in; ++y) {
-            outfield[y*3+x*w_in*3] = infield[x*3+(w_in-y-1)*w_in*3];
-            outfield[y*3+x*w_in*3+1] = infield[x*3+(w_in-y-1)*w_in*3+1];
-            outfield[y*3+x*w_in*3+2] = infield[x*3+(w_in-y-1)*w_in*3+2];
-        }
-    }
-}
-*/
 
 struct stone rotate_stone(struct stone st) {
     struct stone new_st;
@@ -122,16 +96,6 @@ struct stone rotate_stone(struct stone st) {
 
     for (y=0; y<MAX_STONE_SIZE; ++y) {
         for (x=0; x<MAX_STONE_SIZE; ++x) {
-/*
-            new_st.data[x][y][0] = st.data[y][st.width-x-1][0];
-            new_st.data[x][y][1] = st.data[y][st.width-x-1][1];
-            new_st.data[x][y][2] = st.data[y][st.width-x-1][2];
-*/
-/*
-            new_st.data[y][x][0] = st.data[st.height-y-1][st.width-x-1][0];
-            new_st.data[y][x][1] = st.data[st.height-y-1][st.width-x-1][1];
-            new_st.data[y][x][2] = st.data[st.height-y-1][st.width-x-1][2];
-*/
             new_st.data[y][MAX_STONE_SIZE-x-1][0] = st.data[x][y][0];
             new_st.data[y][MAX_STONE_SIZE-x-1][1] = st.data[x][y][1];
             new_st.data[y][MAX_STONE_SIZE-x-1][2] = st.data[x][y][2];
@@ -139,16 +103,6 @@ struct stone rotate_stone(struct stone st) {
     }
     new_st.x = st.x;
     new_st.y = st.y;
-
-/*
-    if (new_st.width > new_st.height) {
-        //new_st.x -= new_st.height / 2 + 1;
-        //new_st.y += new_st.width / 2 - 1;
-    } else if (new_st.width < new_st.height) {
-        //new_st.x += new_st.height / 2 - 1;
-        //new_st.y -= new_st.width / 2 + 1;
-    }
-*/
 
     return new_st;
 }
@@ -165,8 +119,8 @@ void paint_field(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
             if(playfield[x][y][0] != 0 ||
                playfield[x][y][1] != 0 ||
                playfield[x][y][2] != 0){
-		field[x][y]='#';
-	    }
+                field[x][y]='#';
+            }
         }
     }
 
@@ -178,8 +132,8 @@ void paint_field(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
                 if (x+st->x >= 0 && x+st->x < WALL_WIDTH &&
                     y+st->y >= 0 && y+st->y < WALL_HEIGHT)
                     field[x+st->x][y+st->y]='*';
-	    }
-	}
+            }
+        }
     }
     	    
     for (y=0; y<WALL_HEIGHT; ++y) {
@@ -216,7 +170,7 @@ void send_field(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
                     }
                 }
             }
-	}
+        }
     }
 
     uint8_t * rotated_tmp = (uint8_t*)&output[0][0];
@@ -266,24 +220,10 @@ void move_playfield_down(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
 int check_for_ready_line(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3]){
 
     int x, y, line;
-/*
-    if (GRAVITY_X != 0) {
-        width = WALL_WIDTH;
-        height = WALL_HEIGHT;
-        x1 = &x;
-        y1 = &y;
-    } else {
-        width = WALL_HEIGHT;
-        height = WALL_WIDTH;
-        x1 = &y;
-        y1 = &x;
-    }
-*/
  
     for (y=0; y<WALL_HEIGHT; ++y) {
         line=0;
         for (x=0; x<WALL_WIDTH; ++x) {
-            //if (DEBUG) fprintf(stderr, " x:%d   y: %d\n\r", line,i);
             if(playfield[x][y][0] != 0 ||
                playfield[x][y][1] != 0 ||
                playfield[x][y][2] != 0)
@@ -309,23 +249,23 @@ int check_for_touch(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
                     if (DEBUG) fprintf(stderr, "WALL ");
                     return 1;
                 }
-	    }
-	}
+            }
+        }
     }
     
     for (y=0; y<MAX_STONE_SIZE; ++y) {
         for (x=0; x<MAX_STONE_SIZE; ++x) {
-	    if(st->data[x][y][0] != 0 || st->data[x][y][1] != 0 || st->data[x][y][2] != 0) {
-		if(st->x+x >= 0 && st->x+x < WALL_WIDTH && st->y+y >= 0 && st->y+y < WALL_HEIGHT){
-                    //if (DEBUG) fprintf(stderr, "X:%d Y:%d\n\r", st->x+x, st->y+y);
+            if(st->data[x][y][0] != 0 || st->data[x][y][1] != 0 || st->data[x][y][2] != 0) {
+                if(st->x+x >= 0 && st->x+x < WALL_WIDTH &&
+                   st->y+y >= 0 && st->y+y < WALL_HEIGHT){
                     if(playfield[st->x+x][st->y+y][0] != 0 ||
                        playfield[st->x+x][st->y+y][1] != 0 ||
                        playfield[st->x+x][st->y+y][2] != 0) {
                         if (DEBUG) fprintf(stderr, "BRICK ON X:%d Y:%d ", st->x, st->y);
                         return 5;
                     }
-		}	
-	    }
+                }	
+            }
         }
     }
     
@@ -397,7 +337,7 @@ int main(int argc, char * argv[]) {
 
         key = read_key(delay);
         
-	if (DEBUG) fprintf(stderr, "WHILE BEGIN\n\r");
+        if (DEBUG) fprintf(stderr, "WHILE BEGIN\n\r");
 
         touched = 0;
 
