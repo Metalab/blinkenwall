@@ -1,5 +1,6 @@
 Blinkenwall = function() {
 	var websocket;
+	var myUUID
 	
 	this.doConnect = function() {
 		if (window.MozWebSocket)
@@ -12,9 +13,8 @@ Blinkenwall = function() {
 			this.logToConsole('<span style="color: red;"><strong>Error:</strong> This browser does not have support for WebSocket</span>');
 			return false;
 		}
-		
 		var that = this;
-		this.websocket = new WebSocket(uri);
+		this.websocket = new WebSocket(wsUri.value);
 		this.websocket.onopen = function(evt) { that.onOpen(evt) };
 		this.websocket.onclose = function(evt) { that.onClose(evt) };
 		this.websocket.onmessage = function(evt) { that.onMessage(evt) };
@@ -32,7 +32,46 @@ Blinkenwall = function() {
 	
 		return false;
 	};
+	
+	
+	this.renewRandomUUID = function() {
 
+		var s = [], itoh = '0123456789ABCDEF';
+		
+		// Make array of random hex digits. The UUID only has 32 digits in it, but we
+		// allocate an extra items to make room for the '-'s we'll be inserting.
+		for (var i = 0; i <36; i++) s[i] = Math.floor(Math.random()*0x10);
+		
+		// Conform to RFC-4122, section 4.4
+		s[14] = 4;  // Set 4 high bits of time_high field to version
+		s[19] = (s[19] & 0x3) | 0x8;  // Specify 2 high bits of clock sequence
+		
+		// Convert to hex chars
+		for (var i = 0; i <36; i++) s[i] = itoh[s[i]];
+		
+		// Insert '-'s
+		s[8] = s[13] = s[18] = s[23] = '-';
+		
+		//return s.join('');
+		myUUID=s.join('');
+		this.logToConsole("Your new UUID is: " + myUUID);
+		return false;
+	}
+
+
+	this.gamepadSend = function(keycode) {
+		//var tmp=new Array();
+		
+		//tmp.push(0xff.toString(16));
+		//tmp.push(0x0.toString(16));
+		//tmp.push(0x0.toString(16));
+		
+		//this.logToConsole("Key Pressed: " + keycode);
+		this.websocket.send("key " + myUUID + " " + keycode);
+		//alert("key " + myUUID + " " + keycode);
+		return false;
+	};
+	
 	this.domySend = function() {
 		var tmp=new Array();
 		for (i=0; i<18; i++){
@@ -130,7 +169,9 @@ Blinkenwall = function() {
 	};
 };
 
-$(function() {
+$(function() {	
+
+
 	if (window.WebSocket)
 		$("#webSocketSupp").prop("display", "block");
 	else
@@ -138,8 +179,7 @@ $(function() {
 	
 	var blinkenwall = new Blinkenwall();
 	
-	$("#wsUri").val("ws://10.20.30.193:15632/raw");
-	
+	$("#wsUri").val("ws://10.20.30.176:15633/blinkenwallcontrol");
 	$("#connect").click(function() { return blinkenwall.doConnect(); });
 	$("#disconnect").click(function() { return blinkenwall.doDisconnect(); });
 	$("#send").click(function() { return blinkenwall.doSend(); });
@@ -147,5 +187,74 @@ $(function() {
 	$("#mysend").click(function() { return blinkenwall.domySend(); });
 	$("#mysend2").click(function() { return blinkenwall.domySend2(); });
 	
+
+	$("#btn-gamepad-up").click(function() { return blinkenwall.gamepadSend("1"); });
+	$("#btn-gamepad-down").click(function() { return blinkenwall.gamepadSend("2"); });
+	$("#btn-gamepad-left").click(function() { return blinkenwall.gamepadSend("3"); });
+	$("#btn-gamepad-right").click(function() { return blinkenwall.gamepadSend("4"); });
+	$("#btn-gamepad-1").click(function() { return blinkenwall.gamepadSend("5"); });
+	$("#btn-gamepad-2").click(function() { return blinkenwall.gamepadSend("6"); });	
+	
+	blinkenwall.renewRandomUUID();
+	
 	blinkenwall.setGuiConnected(false);
+	
+	
+	//this is cool for debug
+	blinkenwall.doConnect();
+	
+	document.onkeydown = KeyPressed;
+
+	function KeyPressed( e ){
+		var key = ( window.event ) ? event.keyCode : e.keyCode;
+		switch( key )
+		{
+			case 87: //w up
+				return blinkenwall.gamepadSend("1")
+				break;
+			case 83: //s down
+				blinkenwall.gamepadSend("2")
+				break;
+			case 65: //a left
+				blinkenwall.gamepadSend("3")
+				break;
+			case 68: //d right
+				blinkenwall.gamepadSend("4")
+				break;
+			case 81: //q 1
+				blinkenwall.gamepadSend("5")
+				break;
+			case 69: //e 2
+				blinkenwall.gamepadSend("6")
+				break;
+		}
+	}
+
+	
+	document.onkeyup = KeyReleased;
+
+	function KeyReleased( e ){
+		var key = ( window.event ) ? event.keyCode : e.keyCode;
+		switch( key )
+		{
+			case 87: //w up
+				return blinkenwall.gamepadSend("7")
+			break;
+			case 83: //s down
+				blinkenwall.gamepadSend("8")
+				break;
+			case 65: //a left
+				blinkenwall.gamepadSend("9")
+				break;
+			case 68: //d right
+				blinkenwall.gamepadSend("A")
+				break;
+			case 81: //q 1
+				blinkenwall.gamepadSend("B")
+				break;
+			case 69: //e 2
+				blinkenwall.gamepadSend("C")
+				break;
+		}
+	}
 });
