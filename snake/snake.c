@@ -4,17 +4,31 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+
+#define USE_WEBSOCKETS 1
+
+#ifdef USE_WEBSOCKETS
+#include "../libwbl/libwbl.h"
+#endif
 
 #define WALL_WIDTH  9
 #define WALL_HEIGHT 5
 #define WALL_SIZE WALL_WIDTH * WALL_HEIGHT
 
-#define FRAME_DELAY 300000
+#define FRAME_DELAY 1000000
 
+#ifdef USE_WEBSOCKETS
+#define KEY_UP    BW_CMD_UP_PRESSED
+#define KEY_DOWN  BW_CMD_DOWN_PRESSED
+#define KEY_LEFT  BW_CMD_LEFT_PRESSED
+#define KEY_RIGHT BW_CMD_RIGHT_PRESSED
+#else
 #define KEY_UP    'w'
 #define KEY_DOWN  's'
 #define KEY_LEFT  'a'
 #define KEY_RIGHT 'd'
+#endif
 
 typedef struct coord {
     int x;
@@ -63,7 +77,7 @@ void paint_field(struct coord * snake, int snake_length,
 void send_field(struct coord * snake, int snake_length,
                 struct coord food) {
     uint8_t field[WALL_HEIGHT][WALL_WIDTH][3];
-    int i, x, y;
+    int i;
 
     memset(field, 0, WALL_SIZE * 3);
 
@@ -84,7 +98,12 @@ int main(int argc, char * argv[]) {
     int i;
     int snake_length;
 
+#ifdef USE_WEBSOCKETS
+    BwlSocketContext * sc = bw_socket_open();
+    bw_wait_for_connections(sc);
+#else
     system ("/bin/stty -echo raw");
+#endif
 
     srand (time(NULL));
 
@@ -102,49 +121,66 @@ int main(int argc, char * argv[]) {
     food = new_food(snake, snake_length);
 
     while(1) {
+        int input;
+
+#ifdef USE_WEBSOCKETS
+        while(1) {
+            input = bw_get_cmd_block_timeout(sc, NULL, FRAME_DELAY / 1000);
+            if (input == BW_CMD_NONE ||
+                input == KEY_UP ||
+                input == KEY_DOWN ||
+                input == KEY_LEFT ||
+                input == KEY_RIGHT ||
+                input == BW_CMD_DISCONNECT)
+                break;
+        }     
+
+        if (input == BW_CMD_DISCONNECT ) {
+            goto exit;
+        }
+#else
         fd_set readfds;
         struct timeval tv;
-        int input;
         int retval = 0;
-
         FD_ZERO(&readfds);
         FD_SET(0, &readfds);
         tv.tv_sec = 0;
         tv.tv_usec = FRAME_DELAY;
 
         retval = select(1, &readfds, NULL, NULL, &tv);
+        if (retval > 0)
+            input = getchar();
+        else
+            input = 0;
+#endif
 
-        if (retval > 0) {
-            int input = getchar();
-
-            switch(input) {
-            case KEY_UP:
-                if (dir.y != 1) {
-                    dir.x = 0;
-                    dir.y = -1;
-                }
-                break;
-            case KEY_DOWN:
-                if (dir.y != -1) {
-                    dir.x = 0;
-                    dir.y = 1;
-                }
-                break;
-            case KEY_LEFT:
-                if (dir.x != 1) {
-                    dir.x = -1;
-                    dir.y = 0;
-                }
-                break;
-            case KEY_RIGHT:
-                if (dir.x != -1) {
-                    dir.x = 1;
-                    dir.y = 0;
-                }
-                break;
-            default:
-                break;
+        switch(input) {
+        case KEY_UP:
+            if (dir.y != 1) {
+                dir.x = 0;
+                dir.y = -1;
             }
+            break;
+        case KEY_DOWN:
+            if (dir.y != -1) {
+                dir.x = 0;
+                dir.y = 1;
+            }
+            break;
+        case KEY_LEFT:
+            if (dir.x != 1) {
+                dir.x = -1;
+                dir.y = 0;
+            }
+            break;
+        case KEY_RIGHT:
+            if (dir.x != -1) {
+                dir.x = 1;
+                dir.y = 0;
+            }
+            break;
+        default:
+            break;
         }
 
         if (snake[0].x == food.x &&
@@ -178,7 +214,11 @@ int main(int argc, char * argv[]) {
     }
 
 exit:
+#ifdef USE_WEBSOCKETS
+    bw_socket_close(sc);
+#else
     system ("/bin/stty echo cooked");
+#endif
     return 0;
 
 }
