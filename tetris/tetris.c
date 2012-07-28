@@ -1,9 +1,12 @@
-// Printf tetris
+// Printf & Websocket tetris
 
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <time.h>
+#include "../libwbl/libwbl.h"
 
 #define WALL_WIDTH 5
 #define WALL_HEIGHT 9
@@ -20,7 +23,7 @@
 
 #define NUM_STONES 7
 
-#define SLEEP_TIME 10000
+#define SLEEP_TIME 100
 
 #define DEBUG 0
 
@@ -91,7 +94,7 @@ struct stone stones[NUM_STONES] =  { {
 struct stone rotate_stone(struct stone st) {
     struct stone new_st;
     int x, y;
-    int i;
+
     memset(new_st.data, 0, MAX_STONE_SIZE * MAX_STONE_SIZE * 3);
 
     for (y=0; y<MAX_STONE_SIZE; ++y) {
@@ -194,7 +197,7 @@ void move_playfield_down(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
     }
     paint_field(playfield, st);
     send_field(playfield, st);
-    usleep(SLEEP_TIME);
+    usleep(SLEEP_TIME * 1000);
 
     //playfield um eins nach gravity
     memcpy(playfield_tmp, playfield, WALL_SIZE * 3);
@@ -214,7 +217,7 @@ void move_playfield_down(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
 
     paint_field(playfield, st);
     send_field(playfield, st);
-    usleep(SLEEP_TIME);
+    usleep(SLEEP_TIME * 1000);
 }
 
 int check_for_ready_line(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3]){
@@ -314,11 +317,23 @@ int main(int argc, char * argv[]) {
 
     int i, x, y;
     int line_to_remove;
-    int err;
     int frame = 0;
     int delay = SLEEP_TIME;
 
-    system ("/bin/stty -echo raw");
+    BwlSocketContext * sc;
+
+    //system ("/bin/stty -echo raw");
+
+    sc = bw_socket_open();
+    if (!sc) {
+        fprintf(stderr, "Error opening socket\n");
+        return 1;
+    }
+
+    if (bw_wait_for_connections(sc) != 0) {
+        fprintf(stderr, "Error when waiting for connection\n");
+        return 1;
+    }
 
     srand(time(NULL));
  
@@ -335,12 +350,14 @@ int main(int argc, char * argv[]) {
         int key;
         int paint = 0;
 
-        key = read_key(delay);
+        //key = read_key(delay);
+        key = bw_get_cmd_block_timeout(sc, NULL, delay);
         
         if (DEBUG) fprintf(stderr, "WHILE BEGIN\n\r");
 
         touched = 0;
 
+/*
         if (key == KEY_ROT_LEFT) {
             rotated_stone = rotate_stone(st);
         } else if (key == KEY_ROT_RIGHT) {
@@ -358,6 +375,30 @@ int main(int argc, char * argv[]) {
         } else {
             rotated_stone = st;
         }
+*/
+
+        switch(key) {
+        case BW_CMD_BUTTON1_PRESSED:
+            rotated_stone = rotate_stone(st);
+            break;
+        case BW_CMD_BUTTON2_PRESSED:
+            for (i=0; i<3; ++i)
+                rotated_stone = rotate_stone(st);
+            break;
+        case BW_CMD_LEFT_PRESSED:
+            rotated_stone.x++;
+            break;
+        case BW_CMD_RIGHT_PRESSED:
+            rotated_stone.x--;
+            break;
+        case BW_CMD_DOWN_PRESSED:
+            delay /= 10;
+            break;
+        case  BW_CMD_DISCONNECT:
+            goto exit;
+        default:
+            rotated_stone = st;
+        }
         
         if (allow_rotate(&rotated_stone)) {
             paint = 1;
@@ -367,7 +408,7 @@ int main(int argc, char * argv[]) {
                 touched = 1;
         }
         
-        if ((frame++ % (1000000 / SLEEP_TIME)) == 0) {
+        if ((frame++ % (1000 / SLEEP_TIME)) == 0) {
             
             moved_stone = st;
             moved_stone.y++;
@@ -421,7 +462,8 @@ int main(int argc, char * argv[]) {
     
 exit:
     printf("\n\r");
-    system ("/bin/stty echo cooked");
+    //system ("/bin/stty echo cooked");
+    bw_socket_close(sc);
 
     return 0;
 }
