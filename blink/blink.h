@@ -2,7 +2,7 @@
  * Header with public functions
  * Uses SPI protocol for ShiftBrites on Blinkenwall.
  * 
- * Code by Georg <georg.lippitsch@gmx.at> and Wolfgang <wsys@wsys.at>
+ * Code by Georg <georg.lippitsch@gmx.at> and Wolfgang <WSyS@gmx.at>
  */
 
 #ifndef BW_BLINK_H

@@ -2,7 +2,7 @@
  * Listens on TCP/IP port, receives commands using
  * the blinkenwall control protocol.
  * 
- * Code by Georg <georg.lippitsch@gmx.at> and Wolfgang <wsys@gmx.at>
+ * Code by Georg <georg.lippitsch@gmx.at> and Wolfgang <WSyS@gmx.at>
  */
 
 #include <stdio.h>
