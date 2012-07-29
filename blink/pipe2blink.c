@@ -1,5 +1,5 @@
 /* Metalab Blinkenwall interface
- * Reads bytes from STDIN, writes to Raspberry Pi GPIO.
+ * Reads bytes from a named pipe, writes to Raspberry Pi GPIO.
  * Uses SPI protocol for ShiftBrites on Blinkenwall.
  *
  * Data have to be in packed binary 8 bit RGB format,
@@ -9,7 +9,7 @@
  * Requires BCM 2835 library from:
  * http://www.open.com.au/mikem/bcm2835/
  *
- * Code by Georg <georg.lippitsch@gmx.at> and Wolfgang <wsys@wsys.at>
+ * Code by Georg <georg.lippitsch@gmx.at> and Wolfgang <wsys@gmx.at>
  */
 
 #include <stdint.h>
@@ -22,6 +22,7 @@
 int main(int argc, char * argv[]) {
     int inbytes;
     int frame;
+    int file;
     uint8_t inbuf[BW_WALL_SIZE * 3];
 
     if (bw_init()) {
@@ -31,17 +32,29 @@ int main(int argc, char * argv[]) {
 
     frame = 0;
 
-    while(!feof(stdin)) {
+    if (argc > 1) {
+        file = fopen(argc[1], "r");
+        if (fd < 0) {
+            printf("Error opening blinkenwall pipe");
+            return 1;
+        }
+    } else {
+        file = stdin;
+    }
+
+    while(!feof(file)) {
         if (frame++ % (1000 / BW_FRAME_DELAY) == 0)
             bw_wall_config();
 
-        inbytes = fread(inbuf, 1, BW_WALL_SIZE * 3, stdin);
+        inbytes = fread(inbuf, 1, BW_WALL_SIZE * 3, file);
 
         if (inbytes == BW_WALL_SIZE * 3)
             bw_to_wall(inbuf);
 
         usleep(BW_FRAME_DELAY * 1000);
     }
+
+    fclose(file);
 
     bw_close();
 
