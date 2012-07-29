@@ -179,7 +179,8 @@ $(function() {
 	
 	var blinkenwall = new Blinkenwall();
 	
-	$("#wsUri").val("ws://10.20.30.176:15633/blinkenwallcontrol");
+	//$("#wsUri").val("ws://10.20.30.176:15633/blinkenwallcontrol");
+	$("#wsUri").val("ws://10.20.30.150:15633/blinkenwallcontrol");
 	$("#connect").click(function() { return blinkenwall.doConnect(); });
 	$("#disconnect").click(function() { return blinkenwall.doDisconnect(); });
 	$("#send").click(function() { return blinkenwall.doSend(); });

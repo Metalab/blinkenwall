@@ -9,7 +9,7 @@
  * Requires BCM 2835 library from:
  * http://www.open.com.au/mikem/bcm2835/
  *
- * Code by Georg <georg.lippitsch@gmx.at> and Wolfgang <wsys@gmx.at>
+ * Code by Georg <georg.lippitsch@gmx.at> and Wolfgang <WSyS@gmx.at>
  */
 
 #include <stdint.h>

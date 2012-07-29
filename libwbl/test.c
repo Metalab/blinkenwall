@@ -1,6 +1,6 @@
 /* Metalab Blinkenwall websocket listener, testing program
  * 
- * Code by Georg <georg.lippitsch@gmx.at> and Wolfgang <wsys@gmx.at>
+ * Code by Georg <georg.lippitsch@gmx.at> and Wolfgang <WSyS@gmx.at>
  */
 
 #include <stdio.h>
