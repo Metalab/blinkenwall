@@ -23,16 +23,17 @@ BwlSocketContext * bw_socket_open_port(int port)
     int result;
     BwlSocketContext * ctx;
     int on;
+    int i;
 
     ctx = malloc(sizeof(BwlSocketContext));
     if (!ctx) {
-        fprintf(stderr, "Malloc failed!.\n");
+        fprintf(stderr, "[libwbl] Malloc failed!.\n");
         return NULL;
     }
 
     listensocket = socket(AF_INET, SOCK_STREAM, 0);
     if (listensocket < 0) {
-        fprintf(stderr, "Create socket failed.\n");
+        fprintf(stderr, "[libwbl] Create socket failed.\n");
         free(ctx);
         return NULL;
     }
@@ -49,7 +50,7 @@ BwlSocketContext * bw_socket_open_port(int port)
                   sizeof(local));
 
     if (result < 0) {
-        fprintf(stderr, "Bind failed.\n");
+        fprintf(stderr, "[libwbl] Bind failed.\n");
         close(listensocket);
         free(ctx);
         return NULL;
@@ -57,15 +58,16 @@ BwlSocketContext * bw_socket_open_port(int port)
 
     result = listen(listensocket, 1);
     if (result < 0) {
-        fprintf(stderr, "Listen failed.\n");
+        fprintf(stderr, "[libwbl] Listen failed.\n");
         close(listensocket);
         free(ctx);
         return NULL;
     }
 
     ctx->fd_listen = listensocket;
-    ctx->fd_accept = -1;
-    ctx->connected = 0;
+    for(i=0; i<BW_MAX_CONNECTIONS; ++i)
+        ctx->fd_client[0] = -1;
+    ctx->num_connections = 0;
 
     return ctx;
 }
@@ -75,18 +77,24 @@ BwlSocketContext * bw_socket_open()
     return bw_socket_open_port(BW_DEFAULTPORT);
 }
 
-void bw_socket_close(BwlSocketContext * socket_context)
+void bw_socket_close(BwlSocketContext * sc)
 {
-    if (socket_context->fd_listen >= 0)
-        close(socket_context->fd_listen);
+    int i;
 
-    if (socket_context->fd_accept >= 0)
-        close(socket_context->fd_accept);
+    for(i=0; i<BW_MAX_CONNECTIONS; ++i) {
+        if (sc->fd_client[i] >= 0) {
+            close(sc->fd_client[i]);
+        }
+    }
 
-    free(socket_context);
+    if (sc->fd_listen >= 0)
+        close(sc->fd_listen);
+
+    free(sc);
 }
 
 int bw_wait_for_connections_timeout(BwlSocketContext * sc,
+                                    char ** resource,
                                     int timeout) {
     fd_set acceptfds;
     struct timeval tv;
@@ -99,6 +107,17 @@ int bw_wait_for_connections_timeout(BwlSocketContext * sc,
     size_t num_read = 0;
     size_t out_len = BW_READ_BUF_SIZE;
     int written = 0;
+    int i;
+
+    if (sc->fd_listen < 0) {
+        fprintf(stderr, "[libwbl] Listen socket not opened.\n");
+        return -1;
+    }
+
+    if (sc->num_connections >= BW_MAX_CONNECTIONS) {
+        fprintf(stderr, "[libwbl] Maximum number of connections reached.\n");
+        return -1;
+    }
 
     FD_ZERO(&acceptfds);
     FD_SET(sc->fd_listen, &acceptfds);
@@ -118,11 +137,9 @@ int bw_wait_for_connections_timeout(BwlSocketContext * sc,
                           &sockaddr_len);
 
     if (clientsocket < 0) {
-        fprintf(stderr, "Accept failed.\n");
+        fprintf(stderr, "[libwbl] Accept failed.\n");
         return -1;
     }
-
-    sc->fd_accept = clientsocket;
 
     nullhandshake(&hs);
 
@@ -132,7 +149,7 @@ int bw_wait_for_connections_timeout(BwlSocketContext * sc,
                         BW_READ_BUF_SIZE, 0);
 
         if (!read) {
-            fprintf(stderr, "Recv failed, closing.");
+            fprintf(stderr, "[libwbl] Recv failed.");
             return -1;
         }
         num_read += read;
@@ -142,17 +159,18 @@ int bw_wait_for_connections_timeout(BwlSocketContext * sc,
 
         if (frame_type == WS_INCOMPLETE_FRAME &&
             num_read == BW_READ_BUF_SIZE) {
-            fprintf(stderr, "Buffer too small\n");
+            fprintf(stderr, "[libwbl] Buffer too small\n");
             return -1;
         } else if (frame_type == WS_ERROR_FRAME) {
-            fprintf(stderr, "Error in incoming frame\n");
+            fprintf(stderr, "[libwbl] Error in incoming frame\n");
             return -1;
         }
     }
 
-    if (strcmp(hs.resource, BW_CTRL_RESOURCE) != 0) {
-        fprintf(stderr, "Resource is wrong:%s\n", hs.resource);
-        return -1;
+    if (resource) {
+        int res_len = strlen(hs.resource) + 1;
+        *resource = malloc(res_len);
+        strcpy(*resource, hs.resource);
     }
 
     ws_get_handshake_answer(&hs, sc->buffer, &out_len);
@@ -160,126 +178,174 @@ int bw_wait_for_connections_timeout(BwlSocketContext * sc,
                    out_len, 0);
 
     if (written <= 0) {
-        fprintf(stderr, "Send failed.\n");
+        fprintf(stderr, "[libwbl] Send failed.\n");
         return -1;
     }
     if (written != out_len) {
-        fprintf(stderr, "Written %d of %d\n",
+        fprintf(stderr, "[libwbl] Written %d of %d\n",
                 written, (int)out_len);
         return -1;
     }
 
-    sc->connected = 1;
+    for (i=0; i<BW_MAX_CONNECTIONS; ++i) {
+        if (sc->fd_client[i] < 0) {
+            sc->fd_client[i] = clientsocket;
+            sc->num_connections++;
+            return i;
+        }
+    }
 
-    return 0;
+    return -1;
 }
 
-int bw_wait_for_connections(BwlSocketContext * sc)
+int bw_wait_for_connections(BwlSocketContext * sc,
+                            char ** resource)
 {
-    return bw_wait_for_connections_timeout(sc,
+    return bw_wait_for_connections_timeout(sc, resource, 
                                            BW_DEFAULTTIMEOUT);
 }
 
-int bw_get_cmd_block(BwlSocketContext * sc, char ** uuid)
+void bw_connection_close(BwlSocketContext * sc,
+                         int connection_num)
+{
+    if (connection_num < 0 || connection_num >= BW_MAX_CONNECTIONS) {
+        fprintf(stderr, "[libwbl] connection_num %d outside range\n",
+                connection_num);
+        return;
+    }
+
+    if (sc->fd_client[connection_num] < 0) {
+        fprintf(stderr, "[libwbl] connection_num %d not open\n",
+                connection_num);
+        return;
+    }
+
+    close(sc->fd_client[connection_num]);
+    sc->fd_client[connection_num] = -1;
+}
+
+int bw_get_cmd_block_timeout(BwlSocketContext * sc,
+                             int * connection,
+                             char ** uuid,
+                             int timeout)
 {
     size_t num_read = 0;
     enum ws_frame_type frame_type = WS_INCOMPLETE_FRAME;
     size_t data_len;
     size_t out_len = BW_READ_BUF_SIZE;
     uint8_t *data;
+    fd_set recvfds;
+    struct timeval tv;
+    struct timeval * tv2;
+    int result;
+    int fd_max = 0;
+    int i;
 
-    if (!sc->connected)
+    if (sc->num_connections <= 0)
         return BW_CMD_NONE;
 
-    while (frame_type == WS_INCOMPLETE_FRAME) {
-        int read;
-
-        read = recv(sc->fd_accept, sc->buffer+num_read,
-                    BW_READ_BUF_SIZE-num_read, 0);
-        if (read <= 0) {
-            return BW_CMD_DISCONNECT;
+    FD_ZERO(&recvfds);
+    for (i=0; i<BW_MAX_CONNECTIONS; ++i) {
+        if (sc->fd_client[i] >= 0) {
+            FD_SET(sc->fd_client[i], &recvfds);
+            if (sc->fd_client[i] > fd_max)
+                fd_max = sc->fd_client[i];
         }
-        num_read += read;
+    }
 
-        frame_type = ws_parse_input_frame(sc->buffer,
-                                          num_read,
-                                          &data, &data_len);
+    if (timeout >= 0) {
+        tv.tv_sec = timeout / 1000;
+        tv.tv_usec = (timeout % 1000) * 1000;
+        tv2 = &tv;
+    } else {
+        tv2 = NULL;
+    }
 
-        if (frame_type == WS_INCOMPLETE_FRAME &&
-            num_read == BW_READ_BUF_SIZE) {
-            fprintf(stderr, "Buffer too small\n");
-            return BW_CMD_NONE;
-        } else if (frame_type == WS_CLOSING_FRAME) {
-            send(sc->fd_accept, "\xFF\x00", 2, 0);
-            return BW_CMD_DISCONNECT;
-        } else if (frame_type == WS_ERROR_FRAME) {
-            fprintf(stderr, "Error in incoming frame\n");
-            return BW_CMD_NONE;
-        } else if (frame_type == WS_TEXT_FRAME) {
-            out_len = BW_READ_BUF_SIZE;
-            char * pch;
-            uint8_t cmd;
+    result = select(fd_max+1, &recvfds, NULL, NULL, tv2);
 
-            frame_type = ws_make_frame(data, data_len, sc->buffer,
-                                       &out_len, WS_TEXT_FRAME);
-            if (frame_type != WS_TEXT_FRAME) {
-                fprintf(stderr, "Make frame failed\n");
-                return BW_CMD_NONE;
+    if (result <= 0)
+        return BW_CMD_NONE;
+
+    for (i=0; i<BW_MAX_CONNECTIONS; ++i) {
+        if (FD_ISSET(sc->fd_client[i], &recvfds)) {
+            while (frame_type == WS_INCOMPLETE_FRAME) {
+                int read;
+
+                read = recv(sc->fd_client[i], sc->buffer+num_read,
+                            BW_READ_BUF_SIZE-num_read, 0);
+                if (read <= 0) {
+                    return BW_CMD_DISCONNECT;
+                }
+                num_read += read;
+
+                frame_type = ws_parse_input_frame(sc->buffer,
+                                                  num_read,
+                                                  &data, &data_len);
+
+                if (frame_type == WS_INCOMPLETE_FRAME &&
+                    num_read == BW_READ_BUF_SIZE) {
+                    fprintf(stderr, "[libwbl] Buffer too small\n");
+                    return BW_CMD_NONE;
+                } else if (frame_type == WS_CLOSING_FRAME) {
+                    send(sc->fd_client[i], "\xFF\x00", 2, 0);
+                    return BW_CMD_DISCONNECT;
+                } else if (frame_type == WS_ERROR_FRAME) {
+                    fprintf(stderr, "[libwbl] Error in incoming frame\n");
+                    return BW_CMD_NONE;
+                } else if (frame_type == WS_TEXT_FRAME) {
+                    out_len = BW_READ_BUF_SIZE;
+                    char * pch;
+                    uint8_t cmd;
+
+                    frame_type = ws_make_frame(data, data_len, sc->buffer,
+                                               &out_len, WS_TEXT_FRAME);
+                    if (frame_type != WS_TEXT_FRAME) {
+                        fprintf(stderr, "[libwbl] Make frame failed\n");
+                        return BW_CMD_NONE;
+                    }
+
+                    sc->buffer[out_len-1] = '\0';
+
+                    if (strncmp((char*)sc->buffer, "key", 3) == 0) {
+                        fprintf(stderr, "[libwbl] Invalid command\n");
+                        return BW_CMD_NONE;
+                    }
+
+                    strtok((char*)sc->buffer+1, " ");
+                    pch = strtok(NULL, " ");
+                    if (uuid) {
+                        *uuid = pch;
+                    }
+                    pch = strtok(NULL, " ");
+
+                    if (!pch) {
+                        fprintf(stderr, "[libwbl] Error command\n");
+                        return BW_CMD_NONE;
+                    }
+
+                    cmd = (uint8_t)strtoul(pch, NULL, 16);
+
+                    if (cmd <= BW_CMD_NONE || cmd >= BW_CMD_LAST)
+                    {
+                        fprintf(stderr, "[libwbl] Invalid key\n");
+                        return BW_CMD_NONE;
+                    }
+
+                    if (connection)
+                        *connection = i;
+
+                    return cmd;
+                }
             }
-
-            sc->buffer[out_len-1] = '\0';
-
-            if (strncmp((char*)sc->buffer, "key", 3) == 0) {
-                fprintf(stderr, "Invalid command\n");
-                return BW_CMD_NONE;
-            }
-
-            strtok((char*)sc->buffer+1, " ");
-            pch = strtok(NULL, " ");
-            if (uuid) {
-                *uuid = pch;
-            }
-            pch = strtok(NULL, " ");
-
-            if (!pch) {
-                fprintf(stderr, "Error command\n");
-                return BW_CMD_NONE;
-            }
-
-            cmd = (uint8_t)strtoul(pch, NULL, 16);
-
-            if (cmd <= BW_CMD_NONE || cmd >= BW_CMD_LAST)
-            {
-                fprintf(stderr, "Invalid key\n");
-                return BW_CMD_NONE;
-            }
-
-            return cmd;
         }
     }
 
     return BW_CMD_NONE;
 }
 
-int bw_get_cmd_block_timeout(BwlSocketContext * sc,
-                             char ** uuid,
-                             int timeout)
+int bw_get_cmd_block(BwlSocketContext * sc,
+                             int * connection, 
+                             char ** uuid)
 {
-    fd_set recvfds;
-    struct timeval tv;
-    int result;
-
-    FD_ZERO(&recvfds);
-    FD_SET(sc->fd_accept, &recvfds);
-
-    tv.tv_sec = timeout / 1000;
-    tv.tv_usec = (timeout % 1000) * 1000;
-
-    result = select(sc->fd_accept+1,
-                    &recvfds, NULL, NULL, &tv);
-
-    if (result <= 0)
-        return BW_CMD_NONE;
-
-    return bw_get_cmd_block(sc, uuid);
+    return bw_get_cmd_block_timeout(sc, connection, uuid, -1);
 }
