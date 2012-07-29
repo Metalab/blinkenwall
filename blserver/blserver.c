@@ -116,13 +116,16 @@ int main(int argc, char * argv[])
                 char * resource2;
                 int new_connection;
 
-                // Poll for new connection
+                /** Poll for new connection */
+
                 if ((new_connection =
                      bw_wait_for_connections_timeout(sc, &resource2, 0)) >= 0) {
                     if (strcmp(resource, resource2) != 0) {
                         bw_connection_close(sc, new_connection);
                     }
                 }
+
+                /** Look if there is something to read or write */
 
                 FD_ZERO(&readfds);
                 FD_ZERO(&writefds);
@@ -136,17 +139,41 @@ int main(int argc, char * argv[])
                             fd_max = sc->fd_client[i];
                     }
                 }
-                FD_SET(fd_write, &writefds);
-                if (fd_write > fd_max)
-                    fd_max = fd_write;
+                if (cmds_queued > 0) {
+                    FD_SET(fd_write, &writefds);
+                    if (fd_write > fd_max)
+                        fd_max = fd_write;
+                }
 
                 tv.tv_sec = BW_DEFAULTTIMEOUT;
                 tv.tv_usec = 0;
 
                 result = select(fd_max+1, &readfds, &writefds, NULL, &tv);
 
-                if (result <= 0)
+                if (result <= 0) {
+                    for (i=0; i<BW_MAX_CONNECTIONS; ++i) {
+                        if (sc->fd_client[i] >= 0) {
+                            bw_connection_close(sc, i);
+                        }
+                    }
                     break;
+                }
+
+                /** Perform reads / writes */
+
+                /** Send commands from command queue to child process */
+
+                if (FD_ISSET(fd_write, &writefds)) {
+                    if (cmds_queued > 0) {
+                        char * cmdstr =
+                            cmd_queue[cmdq_read++ % BW_CMD_QUEUE_SIZE];
+                        write(fd_write, cmdstr, strlen(cmdstr));
+                        free(cmdstr);
+                        cmds_queued--;
+                    }
+                }
+
+                /** Read command from network and put into queue */
 
                 for (i=0; i<BW_MAX_CONNECTIONS; ++i) {
                     if (FD_ISSET(sc->fd_client[i], &readfds)) {
@@ -154,7 +181,6 @@ int main(int argc, char * argv[])
                         break;
                     }
                 }
-
                 if (cmd_avail) {
                     char * cmdstr;
                     
@@ -162,26 +188,23 @@ int main(int argc, char * argv[])
 
                     if (cmd == BW_CMD_DISCONNECT) {
                         bw_connection_close(sc, current_connection);
-                        break;
+                        continue;
                     }
 
                     assert(current_connection >= 0 &&
                            current_connection < 10);
                     
-                    cmdstr = malloc(strlen(uuid) + 5);
-                    sprintf(cmdstr, "%c %d %s", (char)cmd,
-                            current_connection, uuid);
-
-                    cmd_queue[cmdq_write++ % BW_CMD_QUEUE_SIZE] = cmdstr;
-                    cmds_queued++;
+                    if (cmds_queued < BW_CMD_QUEUE_SIZE) {
+                        cmdstr = malloc(strlen(uuid) + 5);
+                        sprintf(cmdstr, "%c %d %s", (char)cmd,
+                                current_connection, uuid);
+   
+                        cmd_queue[cmdq_write++ % BW_CMD_QUEUE_SIZE] = cmdstr;
+                        cmds_queued++;
+                    }
                 }
 
-                if (FD_ISSET(fd_write, &writefds)) {
-                    char * cmdstr = cmd_queue[cmdq_read++ % BW_CMD_QUEUE_SIZE];
-                    write(fd_write, cmdstr, strlen(cmdstr));
-                    free(cmdstr);
-                    cmds_queued--;
-                }
+                /** Send date from child process to wall */
 
                 if (FD_ISSET(fd_read, &readfds)) {
                     uint8_t rgb_data[BW_WALL_SIZE];
