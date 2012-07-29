@@ -22,7 +22,7 @@
 int main(int argc, char * argv[]) {
     int inbytes;
     int frame;
-    int file;
+    FILE * file;
     uint8_t inbuf[BW_WALL_SIZE * 3];
 
     if (bw_init()) {
@@ -33,8 +33,8 @@ int main(int argc, char * argv[]) {
     frame = 0;
 
     if (argc > 1) {
-        file = fopen(argc[1], "r");
-        if (fd < 0) {
+        file = fopen(argv[1], "r");
+        if (file == NULL) {
             printf("Error opening blinkenwall pipe");
             return 1;
         }

@@ -2,7 +2,7 @@ CC      = gcc
 CFLAGS  = -Wall -Werror -O3 -I.
 DEPS    = blink.h
 OBJ     = blink.o pipe2blink.o
-ALIBS   = libbcm2835.a
+ALIBS   = /usr/local/lib/libbcm2835.a
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)

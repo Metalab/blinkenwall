@@ -1,0 +1,4 @@
+MOSI -> DI
+SCKL -> CLOCK
+GPIO 25 -> LI
+GPIO 24 -> EI
