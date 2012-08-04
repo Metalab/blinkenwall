@@ -211,22 +211,22 @@ $(function() {
 		switch( key )
 		{
 			case 87: //w up
-				return blinkenwall.gamepadSend("1")
+				return blinkenwall.gamepadSend("77")
 				break;
 			case 83: //s down
-				blinkenwall.gamepadSend("2")
+				blinkenwall.gamepadSend("73")
 				break;
 			case 65: //a left
-				blinkenwall.gamepadSend("3")
+				blinkenwall.gamepadSend("61")
 				break;
 			case 68: //d right
-				blinkenwall.gamepadSend("4")
+				blinkenwall.gamepadSend("64")
 				break;
 			case 81: //q 1
-				blinkenwall.gamepadSend("5")
+				blinkenwall.gamepadSend("71")
 				break;
 			case 69: //e 2
-				blinkenwall.gamepadSend("6")
+				blinkenwall.gamepadSend("65")
 				break;
 		}
 	}
