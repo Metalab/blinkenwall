@@ -189,12 +189,12 @@ $(function() {
 	$("#mysend2").click(function() { return blinkenwall.domySend2(); });
 	
 
-	$("#btn-gamepad-up").click(function() { return blinkenwall.gamepadSend("1"); });
-	$("#btn-gamepad-down").click(function() { return blinkenwall.gamepadSend("2"); });
-	$("#btn-gamepad-left").click(function() { return blinkenwall.gamepadSend("3"); });
-	$("#btn-gamepad-right").click(function() { return blinkenwall.gamepadSend("4"); });
-	$("#btn-gamepad-1").click(function() { return blinkenwall.gamepadSend("5"); });
-	$("#btn-gamepad-2").click(function() { return blinkenwall.gamepadSend("6"); });	
+	$("#btn-gamepad-up").click(function() { return blinkenwall.gamepadSend("77"); });
+	$("#btn-gamepad-down").click(function() { return blinkenwall.gamepadSend("73"); });
+	$("#btn-gamepad-left").click(function() { return blinkenwall.gamepadSend("61"); });
+	$("#btn-gamepad-right").click(function() { return blinkenwall.gamepadSend("64"); });
+	$("#btn-gamepad-1").click(function() { return blinkenwall.gamepadSend("71"); });
+	$("#btn-gamepad-2").click(function() { return blinkenwall.gamepadSend("65"); });	
 	
 	blinkenwall.renewRandomUUID();
 	
