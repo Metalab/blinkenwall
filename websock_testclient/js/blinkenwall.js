@@ -14,7 +14,7 @@ Blinkenwall = function() {
 			return false;
 		}
 		var that = this;
-		this.websocket = new WebSocket(wsUri.value);
+		this.websocket = new WebSocket($("#wsUri").val());
 		this.websocket.onopen = function(evt) { that.onOpen(evt) };
 		this.websocket.onclose = function(evt) { that.onClose(evt) };
 		this.websocket.onmessage = function(evt) { that.onMessage(evt) };
@@ -204,9 +204,7 @@ $(function() {
 	//this is cool for debug
 	blinkenwall.doConnect();
 	
-	document.onkeydown = KeyPressed;
-
-	function KeyPressed( e ){
+	$('body').on('keydown', function( e ){
 		var key = ( window.event ) ? event.keyCode : e.keyCode;
 		switch( key )
 		{
@@ -229,12 +227,10 @@ $(function() {
 				blinkenwall.gamepadSend("65")
 				break;
 		}
-	}
+		return false;
+	});
 
-	
-	document.onkeyup = KeyReleased;
-
-	function KeyReleased( e ){
+	$('body').on('keyup', function( e ){
 		var key = ( window.event ) ? event.keyCode : e.keyCode;
 		switch( key )
 		{
@@ -257,5 +253,6 @@ $(function() {
 				blinkenwall.gamepadSend("C")
 				break;
 		}
-	}
+		return false;
+	});
 });
