@@ -162,6 +162,8 @@ Blinkenwall = function() {
 		$('#send').prop("disabled", !isConnected);
 		$('#mysend').prop("disabled", !isConnected);
 		$('#mysend2').prop("disabled", !isConnected);
+		
+		this.connected = isConnected;
 	};
 		
 	this.clearLog = function() {
@@ -205,6 +207,8 @@ $(function() {
 	blinkenwall.doConnect();
 	
 	$('body').on('keydown', function( e ){
+		if(!blinkenwall.connected)
+			return true;
 		var key = ( window.event ) ? event.keyCode : e.keyCode;
 		switch( key )
 		{
@@ -231,6 +235,8 @@ $(function() {
 	});
 
 	$('body').on('keyup', function( e ){
+		if(!blinkenwall.connected)
+			return true;
 		var key = ( window.event ) ? event.keyCode : e.keyCode;
 		switch( key )
 		{
