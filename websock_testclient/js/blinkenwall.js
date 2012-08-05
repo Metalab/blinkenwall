@@ -14,7 +14,7 @@ Blinkenwall = function() {
 			return false;
 		}
 		var that = this;
-		this.websocket = new WebSocket(wsUri.value);
+		this.websocket = new WebSocket($("#wsUri").val());
 		this.websocket.onopen = function(evt) { that.onOpen(evt) };
 		this.websocket.onclose = function(evt) { that.onClose(evt) };
 		this.websocket.onmessage = function(evt) { that.onMessage(evt) };
@@ -162,6 +162,8 @@ Blinkenwall = function() {
 		$('#send').prop("disabled", !isConnected);
 		$('#mysend').prop("disabled", !isConnected);
 		$('#mysend2').prop("disabled", !isConnected);
+		
+		this.connected = isConnected;
 	};
 		
 	this.clearLog = function() {
@@ -204,37 +206,37 @@ $(function() {
 	//this is cool for debug
 	blinkenwall.doConnect();
 	
-	document.onkeydown = KeyPressed;
-
-	function KeyPressed( e ){
+	$('body').on('keydown', function( e ){
+		if(!blinkenwall.connected)
+			return true;
 		var key = ( window.event ) ? event.keyCode : e.keyCode;
 		switch( key )
 		{
 			case 87: //w up
-				return blinkenwall.gamepadSend("1")
+				return blinkenwall.gamepadSend("77")
 				break;
 			case 83: //s down
-				blinkenwall.gamepadSend("2")
+				blinkenwall.gamepadSend("73")
 				break;
 			case 65: //a left
-				blinkenwall.gamepadSend("3")
+				blinkenwall.gamepadSend("61")
 				break;
 			case 68: //d right
-				blinkenwall.gamepadSend("4")
+				blinkenwall.gamepadSend("64")
 				break;
 			case 81: //q 1
-				blinkenwall.gamepadSend("5")
+				blinkenwall.gamepadSend("71")
 				break;
 			case 69: //e 2
-				blinkenwall.gamepadSend("6")
+				blinkenwall.gamepadSend("65")
 				break;
 		}
-	}
+		return false;
+	});
 
-	
-	document.onkeyup = KeyReleased;
-
-	function KeyReleased( e ){
+	$('body').on('keyup', function( e ){
+		if(!blinkenwall.connected)
+			return true;
 		var key = ( window.event ) ? event.keyCode : e.keyCode;
 		switch( key )
 		{
@@ -257,5 +259,6 @@ $(function() {
 				blinkenwall.gamepadSend("C")
 				break;
 		}
-	}
+		return false;
+	});
 });
