@@ -200,11 +200,30 @@ void send_field(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
         }
     }
 
-    uint8_t * rotated_tmp = (uint8_t*)&output[0][0];
-    for (i=0; i<WALL_WIDTH*WALL_HEIGHT*3; ++i) {
-        putchar(*rotated_tmp++);
-    }
+    fwrite(output[0][0], 1, WALL_WIDTH*WALL_HEIGHT*3, stdout);
     fflush(stdout);
+}
+
+void send_nextstone(nextstone)
+{
+    char sndbuf[WALL_WIDTH*WALL_HEIGHT*3];
+    memset(sndbuf, 0, WALL_WIDTH*WALL_HEIGHT*3);
+    memcpy(sndbuf, &bw_sendback_prefix, 8);
+    sprintf(sndbuf+8, "tetris stone %d", nextstone);
+
+    fwrite(sndbuf, 1, WALL_WIDTH*WALL_HEIGHT*3, stdout);
+    fflush(stdout);    
+}
+
+void send_points(int points)
+{
+    char sndbuf[WALL_WIDTH*WALL_HEIGHT*3];
+    memset(sndbuf, 0, WALL_WIDTH*WALL_HEIGHT*3);
+    memcpy(sndbuf, &bw_sendback_prefix, 8);
+    sprintf(sndbuf+8, "tetris points %d", points);
+
+    fwrite(sndbuf, 1, WALL_WIDTH*WALL_HEIGHT*3, stdout);
+    fflush(stdout);    
 }
 
 void move_playfield_down(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
@@ -306,10 +325,13 @@ int allow_movement(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
                st->data[x][y][2] > 0) {
                 if (x+st->x < 0 || x+st->x >= WALL_WIDTH)
                     return 0;
-                if(playfield[st->x+x][st->y+y][0] != 0 ||
-                   playfield[st->x+x][st->y+y][1] != 0 ||
-                   playfield[st->x+x][st->y+y][2] != 0)
-                    return 0;
+                if (st->x+x >= 0 && st->x+x < WALL_WIDTH &&
+                    st->y+y >= 0 && st->y+y < WALL_HEIGHT) {
+                    if(playfield[st->x+x][st->y+y][0] != 0 ||
+                       playfield[st->x+x][st->y+y][1] != 0 ||
+                       playfield[st->x+x][st->y+y][2] != 0)
+                        return 0;
+                }
             }
         }
     }
@@ -349,8 +371,11 @@ int main(int argc, char * argv[]) {
 
     int x, y;
     int line_to_remove;
-    //int frame = 0;
     int delay = 300000;
+
+    int stone_next;
+
+    int points = 0;
 
     struct timeval tv;
     struct timeval tv2;
@@ -382,6 +407,10 @@ int main(int argc, char * argv[]) {
     memset(st_tmp.data, 0, MAX_STONE_SIZE * MAX_STONE_SIZE*3);
 
     st = stones[rand() % NUM_STONES];
+    stone_next = rand() % NUM_STONES;
+    send_nextstone(stone_next);
+
+    send_points(0);
 
     gettimeofday(&tv, NULL);
 
@@ -454,6 +483,8 @@ int main(int argc, char * argv[]) {
         timeval_subtract(&tv_res, &tv2, &tv);
 
         if (tv_res.tv_usec > delay) {
+            int lines_removed;
+
             st_tmp = st;
             st_tmp.y++;
             
@@ -487,13 +518,21 @@ int main(int argc, char * argv[]) {
                         }
                     }
                 }
-                st = stones[rand() % NUM_STONES];
+                st = stones[stone_next];
+                stone_next = rand() % NUM_STONES;
+                send_nextstone(stone_next);
                 delay = 300000;
             }
 	
+            lines_removed = 0;
             while ((line_to_remove = check_for_ready_line(playfield)) != -1){
                 if (DEBUG) fprintf(stderr, "LINE READY %d\n\r", line_to_remove);
                 move_playfield_down(playfield, &st, line_to_remove);
+                lines_removed++;
+                points += (lines_removed * 100);
+            }
+            if (lines_removed > 0) {
+                send_points(points);
             }
 
             gettimeofday(&tv, NULL);
