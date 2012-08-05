@@ -148,6 +148,7 @@ Blinkenwall = function() {
 	
 	this.onMessage = function(evt) {
 		this.logToConsole('<span style="color: blue;">RESPONSE: ' + evt.data+'</span>');
+		this.ParseServerCommand(evt.data);
 	}
 	
 	this.onError = function(evt) {
@@ -168,6 +169,23 @@ Blinkenwall = function() {
 		
 	this.clearLog = function() {
 		$("#consoleLog").empty();
+	};
+	
+	this.ParseServerCommand = function(message) {
+		//alert(message);
+		
+		var tokens=message.split(" ");
+		switch(tokens[0])
+		{
+		case "tetris":
+			if (tokens[1]=="stone") {
+				$("#ServerImage").prop("src", "http://10.20.30.150/gamefiles/tetris/" + tokens[2] + ".png");
+				$("#ServerText").text("Nächster Stein");
+			}
+			break;
+		default:
+		}
+		return false;
 	};
 };
 
@@ -196,7 +214,8 @@ $(function() {
 	$("#btn-gamepad-left").click(function() { return blinkenwall.gamepadSend("61"); });
 	$("#btn-gamepad-right").click(function() { return blinkenwall.gamepadSend("64"); });
 	$("#btn-gamepad-1").click(function() { return blinkenwall.gamepadSend("71"); });
-	$("#btn-gamepad-2").click(function() { return blinkenwall.gamepadSend("65"); });	
+	$("#btn-gamepad-2").click(function() { return blinkenwall.gamepadSend("65"); });
+	
 	
 	blinkenwall.renewRandomUUID();
 	
