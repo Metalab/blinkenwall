@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#include <sys/time.h>
 #include "../libwbl/libwbl.h"
 
 #define WALL_WIDTH 5
@@ -22,8 +23,6 @@
 #define MAX_STONE_SIZE 5
 
 #define NUM_STONES 7
-
-#define SLEEP_TIME 100
 
 #define DEBUG 0
 
@@ -90,6 +89,31 @@ struct stone stones[NUM_STONES] =  { {
         0, // Position X
         -2 // Position Y
     } };
+
+int
+timeval_subtract (result, x, y)
+    struct timeval *result, *x, *y;
+{
+    /* Perform the carry for the later subtraction by updating y. */
+    if (x->tv_usec < y->tv_usec) {
+        int nsec = (y->tv_usec - x->tv_usec) / 1000000 + 1;
+        y->tv_usec -= 1000000 * nsec;
+        y->tv_sec += nsec;
+    }
+    if (x->tv_usec - y->tv_usec > 1000000) {
+        int nsec = (x->tv_usec - y->tv_usec) / 1000000;
+        y->tv_usec += 1000000 * nsec;
+        y->tv_sec -= nsec;
+    }
+
+    /* Compute the time remaining to wait.
+       tv_usec is certainly positive. */
+    result->tv_sec = x->tv_sec - y->tv_sec;
+    result->tv_usec = x->tv_usec - y->tv_usec;
+
+    /* Return 1 if result is negative. */
+    return x->tv_sec < y->tv_sec;
+}
 
 struct stone rotate_stone(struct stone st) {
     struct stone new_st;
@@ -197,7 +221,7 @@ void move_playfield_down(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
     }
     paint_field(playfield, st);
     send_field(playfield, st);
-    usleep(SLEEP_TIME * 1000);
+    usleep(500000);
 
     //playfield um eins nach gravity
     memcpy(playfield_tmp, playfield, WALL_SIZE * 3);
@@ -217,7 +241,7 @@ void move_playfield_down(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
 
     paint_field(playfield, st);
     send_field(playfield, st);
-    usleep(SLEEP_TIME * 1000);
+    usleep(500000);
 }
 
 int check_for_ready_line(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3]){
@@ -292,22 +316,29 @@ int allow_movement(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
     return 1;
 }
 
-int read_key(int delay) {
+char read_command(delay)
+{
     fd_set readfds;
     struct timeval tv;
-    int retval;
-
+    int retval = 0;
+    char cmd_buf[1024];
+        
     FD_ZERO(&readfds);
     FD_SET(0, &readfds);
     tv.tv_sec = 0;
     tv.tv_usec = delay;
-
-    retval = select(1, &readfds, NULL, NULL, &tv);
-
-    if (retval > 0)
-        return getchar();
-    else
+        
+    retval = select(STDIN_FILENO+1, &readfds, NULL, NULL, &tv);
+    if (retval > 0) {
+        int num_read = read(STDIN_FILENO, cmd_buf, 255);
+        if (num_read > 0) {
+            return(cmd_buf[0]);
+        } else {
+            return 0;
+        }
+    } else {
         return 0;
+    }
 }
 
 int main(int argc, char * argv[]) {
@@ -316,25 +347,33 @@ int main(int argc, char * argv[]) {
     struct stone st;
     struct stone st_tmp;
 
-    int i, x, y;
+    int x, y;
     int line_to_remove;
-    int frame = 0;
-    int delay = SLEEP_TIME;
+    //int frame = 0;
+    int delay = 300000;
 
-    BwlSocketContext * sc;
+    struct timeval tv;
+    struct timeval tv2;
+    struct timeval tv_res;
 
-    //system ("/bin/stty -echo raw");
+    //BwlSocketContext * sc;
 
+    system ("/bin/stty -echo raw");
+
+/*
     sc = bw_socket_open();
     if (!sc) {
         fprintf(stderr, "Error opening socket\n");
         return 1;
     }
+*/
 
+/*
     if (bw_wait_for_connections(sc) != 0) {
         fprintf(stderr, "Error when waiting for connection\n");
         return 1;
     }
+*/
 
     srand(time(NULL));
 
@@ -344,40 +383,48 @@ int main(int argc, char * argv[]) {
 
     st = stones[rand() % NUM_STONES];
 
+    gettimeofday(&tv, NULL);
+
     while(1) {
-        struct stone moved_stone;
-        struct stone rotated_stone;
         int touched;
         int key;
-        int paint = 0;
 
-        //key = read_key(delay);
-        key = bw_get_cmd_block_timeout(sc, NULL, delay);
+        key = read_command(delay);
+        //key = bw_get_cmd_block_timeout(sc, NULL, delay);
         
         if (DEBUG) fprintf(stderr, "WHILE BEGIN\n\r");
 
         touched = 0;
 
-/*
         if (key == KEY_ROT_LEFT) {
-            rotated_stone = rotate_stone(st);
+            st_tmp = rotate_stone(st);
         } else if (key == KEY_ROT_RIGHT) {
             int i;
             for (i=0; i<3; ++i)
-                rotated_stone = rotate_stone(st);
-        } else if (key == KEY_LEFT) {
-            rotated_stone.x++;
+                st_tmp = rotate_stone(st);
+        } else {
+            st_tmp = st;
+        }
+        if (allow_movement(playfield, &st_tmp))
+            st = st_tmp;
+
+        st_tmp = st;
+        if (key == KEY_LEFT) {
+            st_tmp.x++;
         } else if (key == KEY_RIGHT) {
-            rotated_stone.x--;
+            st_tmp.x--;
         } else if (key == KEY_DOWN) {
             delay /= 10;
         } else if (key == KEY_QUIT) {
             goto exit;
         } else {
-            rotated_stone = st;
+            st_tmp = st;
         }
-*/
+        if (allow_movement(playfield, &st_tmp)) {
+            st = st_tmp;
+        }
 
+/*
         switch(key) {
         case BW_CMD_BUTTON2_PRESSED:
             rotated_stone = rotate_stone(st);
@@ -400,22 +447,18 @@ int main(int argc, char * argv[]) {
         default:
             rotated_stone = st;
         }
-        
-        if (allow_movement(playfield, &rotated_stone)) {
-            paint = 1;
-            if (!check_for_touch(playfield, &rotated_stone))
-                st = rotated_stone;
-            else
-                touched = 1;
-        }
+*/
 
-        if ((frame++ % (1000 / SLEEP_TIME)) == 0) {
+        gettimeofday(&tv2, NULL);
+
+        timeval_subtract(&tv_res, &tv2, &tv);
+
+        if (tv_res.tv_usec > delay) {
+            st_tmp = st;
+            st_tmp.y++;
             
-            moved_stone = st;
-            moved_stone.y++;
-            
-            if (!check_for_touch(playfield, &moved_stone))
-                st = moved_stone;
+            if (!check_for_touch(playfield, &st_tmp))
+                st = st_tmp;
             else
                 touched = 1;
 
@@ -445,26 +488,25 @@ int main(int argc, char * argv[]) {
                     }
                 }
                 st = stones[rand() % NUM_STONES];
-                delay = SLEEP_TIME;
+                delay = 300000;
             }
 	
             while ((line_to_remove = check_for_ready_line(playfield)) != -1){
                 if (DEBUG) fprintf(stderr, "LINE READY %d\n\r", line_to_remove);
                 move_playfield_down(playfield, &st, line_to_remove);
             }
-            paint = 1;
+
+            gettimeofday(&tv, NULL);
         }
 
-        if (paint) {
-            paint_field(playfield, &st);
-            send_field(playfield, &st);
-        }
+        paint_field(playfield, &st);
+        send_field(playfield, &st);
     }
 
 exit:
     printf("\n\r");
-    //system ("/bin/stty echo cooked");
-    bw_socket_close(sc);
+    system ("/bin/stty echo cooked");
+    //bw_socket_close(sc);
 
     return 0;
 }

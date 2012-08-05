@@ -17,19 +17,19 @@
 
 #define BW_CMD_DISCONNECT        -1
 #define BW_CMD_NONE             0x0
-#define BW_CMD_UP_PRESSED       0x1
-#define BW_CMD_DOWN_PRESSED     0x2
-#define BW_CMD_LEFT_PRESSED     0x3
-#define BW_CMD_RIGHT_PRESSED    0x4
-#define BW_CMD_BUTTON1_PRESSED  0x5
-#define BW_CMD_BUTTON2_PRESSED  0x6
+#define BW_CMD_UP_PRESSED       0x77
+#define BW_CMD_DOWN_PRESSED     0x73
+#define BW_CMD_LEFT_PRESSED     0x61
+#define BW_CMD_RIGHT_PRESSED    0x64
+#define BW_CMD_BUTTON1_PRESSED  0x71
+#define BW_CMD_BUTTON2_PRESSED  0x65
 #define BW_CMD_UP_RELEASED      0x7
 #define BW_CMD_DOWN_RELEASED    0x8
 #define BW_CMD_LEFT_RELEASED    0x9
 #define BW_CMD_RIGHT_RELEASED   0xA
 #define BW_CMD_BUTTON1_RELEASED 0xB
 #define BW_CMD_BUTTON2_RELEASED 0xC
-#define BW_CMD_LAST             0xD
+#define BW_CMD_LAST             0x78
 
 typedef struct BwlSocketContext {
     int fd_listen;                     ///< File descriptor of listen socket

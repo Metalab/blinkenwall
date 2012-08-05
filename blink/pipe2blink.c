@@ -32,29 +32,29 @@ int main(int argc, char * argv[]) {
 
     frame = 0;
 
-    if (argc > 1) {
-        file = fopen(argv[1], "r");
-        if (file == NULL) {
-            printf("Error opening blinkenwall pipe");
-            return 1;
+    while (argc > 1) {
+        if (argc > 1) {
+            file = fopen(argv[1], "r");
+            if (file == NULL) {
+                printf("Error opening blinkenwall pipe");
+                return 1;
+            }
+        } else {
+            file = stdin;
         }
-    } else {
-        file = stdin;
+
+        while(!feof(file)) {
+            if (frame++ % 50 == 0)
+                bw_wall_config();
+            
+            inbytes = fread(inbuf, 1, BW_WALL_SIZE * 3, file);
+            
+            if (inbytes == BW_WALL_SIZE * 3)
+                bw_to_wall(inbuf);
+        }
+
+        fclose(file);
     }
-
-    while(!feof(file)) {
-        if (frame++ % (1000 / BW_FRAME_DELAY) == 0)
-            bw_wall_config();
-
-        inbytes = fread(inbuf, 1, BW_WALL_SIZE * 3, file);
-
-        if (inbytes == BW_WALL_SIZE * 3)
-            bw_to_wall(inbuf);
-
-        usleep(BW_FRAME_DELAY * 1000);
-    }
-
-    fclose(file);
 
     bw_close();
 

@@ -21,7 +21,8 @@
 /* Data for re-configuring shift brite, sent every second.
  * This also limits electrical current for LEDs
  */
-static const uint8_t reset_data[4] = {0b01000000, 0b11110000, 0b00111100, 0b00001111};
+//static const uint8_t reset_data[4] = {0b01000000, 0b11110000, 0b00111100, 0b00001111};
+static const uint8_t reset_data[4] = {0b01000000, 0b00110000, 0b00001100, 0b00000011};
 
 /* Alternative configure data with maximum LED current.
  * LEDs behaving weired with this, thus not used

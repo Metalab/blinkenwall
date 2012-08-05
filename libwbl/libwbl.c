@@ -66,7 +66,7 @@ BwlSocketContext * bw_socket_open_port(int port)
 
     ctx->fd_listen = listensocket;
     for(i=0; i<BW_MAX_CONNECTIONS; ++i)
-        ctx->fd_client[0] = -1;
+        ctx->fd_client[i] = -1;
     ctx->num_connections = 0;
 
     return ctx;
@@ -84,6 +84,8 @@ void bw_socket_close(BwlSocketContext * sc)
     for(i=0; i<BW_MAX_CONNECTIONS; ++i) {
         if (sc->fd_client[i] >= 0) {
             close(sc->fd_client[i]);
+            sc->fd_client[i] = -1;
+            sc->num_connections--;
         }
     }
 
@@ -221,6 +223,7 @@ void bw_connection_close(BwlSocketContext * sc,
     }
 
     close(sc->fd_client[connection_num]);
+    sc->num_connections--;
     sc->fd_client[connection_num] = -1;
 }
 

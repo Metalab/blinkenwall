@@ -10,6 +10,8 @@
 #define BW_BINARY_PATH "/usr/local/lib/blinkenwall"
 #define BW_CMD_QUEUE_SIZE 10
 
+#define BW_DEBUG 1
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -40,8 +42,14 @@ int main(int argc, char * argv[])
 
     while (1) {
         int con;
+#ifdef BW_DEBUG
+        fprintf(stderr, "Waiting for connections\n");
+#endif
         con = bw_wait_for_connections(sc, &resource);
         if (con >= 0) {
+#ifdef BW_DEBUG
+            fprintf(stderr, "New connection\n");
+#endif
             int cmd;
             char * filename;
             int fstr_len;
@@ -75,6 +83,10 @@ int main(int argc, char * argv[])
                 bw_connection_close(sc, con);
                 continue;
             }
+
+#ifdef BW_DEBUG
+            fprintf(stderr, "Resource: %s\n", resource);
+#endif
             
             /** Execute binary specified by resource */
 
@@ -111,7 +123,7 @@ int main(int argc, char * argv[])
 
             fd_bwpipe = open(BW_PIPE_PATH, O_WRONLY);
 
-            for(;;) {
+            while(1) {
                 int cmd_avail = 0;
                 char * resource2;
                 int new_connection;
@@ -150,12 +162,14 @@ int main(int argc, char * argv[])
 
                 result = select(fd_max+1, &readfds, &writefds, NULL, &tv);
 
+#ifdef BW_DEBUG
+                fprintf(stderr, "select result: %d\n", result);
+#endif
+
                 if (result <= 0) {
-                    for (i=0; i<BW_MAX_CONNECTIONS; ++i) {
-                        if (sc->fd_client[i] >= 0) {
-                            bw_connection_close(sc, i);
-                        }
-                    }
+#ifdef BW_DEBUG
+                    fprintf(stderr, "Closing connection\n");
+#endif
                     break;
                 }
 
@@ -167,6 +181,10 @@ int main(int argc, char * argv[])
                     if (cmds_queued > 0) {
                         char * cmdstr =
                             cmd_queue[cmdq_read++ % BW_CMD_QUEUE_SIZE];
+#ifdef BW_DEBUG
+                        fprintf(stderr, "Send command to child: %s\n", cmdstr);
+#endif
+
                         write(fd_write, cmdstr, strlen(cmdstr));
                         free(cmdstr);
                         cmds_queued--;
@@ -196,7 +214,7 @@ int main(int argc, char * argv[])
                     
                     if (cmds_queued < BW_CMD_QUEUE_SIZE) {
                         cmdstr = malloc(strlen(uuid) + 5);
-                        sprintf(cmdstr, "%c %d %s", (char)cmd,
+                        sprintf(cmdstr, "%c %d %s\n", (char)cmd,
                                 current_connection, uuid);
    
                         cmd_queue[cmdq_write++ % BW_CMD_QUEUE_SIZE] = cmdstr;
@@ -204,13 +222,24 @@ int main(int argc, char * argv[])
                     }
                 }
 
-                /** Send date from child process to wall */
+                /** Send data from child process to wall */
 
                 if (FD_ISSET(fd_read, &readfds)) {
                     uint8_t rgb_data[BW_WALL_SIZE];
 
-                    read(fd_read, rgb_data, BW_WALL_SIZE);
-                    write(fd_bwpipe, rgb_data, BW_WALL_SIZE);
+#ifdef BW_DEBUG
+                    fprintf(stderr, "Got data for wall.\n");
+#endif
+
+                    if (read(fd_read, rgb_data, BW_WALL_SIZE) ==
+                        BW_WALL_SIZE) {
+                        write(fd_bwpipe, rgb_data, BW_WALL_SIZE);
+                    } else {
+#ifdef BW_DEBUG
+                        fprintf(stderr, "Input pipe closed\n");
+#endif
+                        break;
+                    }
                 }
             }
 
@@ -221,7 +250,11 @@ int main(int argc, char * argv[])
             if (fd_read >= 0)
                 close(fd_read);
 
-            free(resource);
+            for (i=0; i<BW_MAX_CONNECTIONS; ++i) {
+                if (sc->fd_client[i] >= 0) {
+                    bw_connection_close(sc, i);
+                }
+            }
         }
     }
 

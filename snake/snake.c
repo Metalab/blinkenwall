@@ -5,8 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
-#define USE_WEBSOCKETS 1
+//#define USE_WEBSOCKETS 1
 
 #ifdef USE_WEBSOCKETS
 #include "../libwbl/libwbl.h"
@@ -16,7 +17,7 @@
 #define WALL_HEIGHT 5
 #define WALL_SIZE WALL_WIDTH * WALL_HEIGHT
 
-#define FRAME_DELAY 1000000
+#define FRAME_DELAY 300000
 
 #ifdef USE_WEBSOCKETS
 #define KEY_UP    BW_CMD_UP_PRESSED
@@ -91,6 +92,32 @@ void send_field(struct coord * snake, int snake_length,
     fflush(stdout);
 }
 
+char read_command()
+{
+    fd_set readfds;
+    struct timeval tv;
+    int retval = 0;
+    char cmd_buf[1024];
+
+        
+    FD_ZERO(&readfds);
+    FD_SET(0, &readfds);
+    tv.tv_sec = 0;
+    tv.tv_usec = 0;
+        
+    retval = select(STDIN_FILENO+1, &readfds, NULL, NULL, &tv);
+    if (retval > 0) {
+        int num_read = read(STDIN_FILENO, cmd_buf, 255);
+        if (num_read > 0) {
+            return(cmd_buf[0]);
+        } else {
+            return 0;
+        }
+    } else {
+        return 0;
+    }
+}
+
 int main(int argc, char * argv[]) {
     struct coord snake[WALL_SIZE];
     struct coord dir;
@@ -123,6 +150,8 @@ int main(int argc, char * argv[]) {
     while(1) {
         int input;
 
+        usleep(FRAME_DELAY);
+
 #ifdef USE_WEBSOCKETS
         while(1) {
             input = bw_get_cmd_block_timeout(sc, NULL, FRAME_DELAY / 1000);
@@ -139,19 +168,7 @@ int main(int argc, char * argv[]) {
             goto exit;
         }
 #else
-        fd_set readfds;
-        struct timeval tv;
-        int retval = 0;
-        FD_ZERO(&readfds);
-        FD_SET(0, &readfds);
-        tv.tv_sec = 0;
-        tv.tv_usec = FRAME_DELAY;
-
-        retval = select(1, &readfds, NULL, NULL, &tv);
-        if (retval > 0)
-            input = getchar();
-        else
-            input = 0;
+        input = read_command();
 #endif
 
         switch(input) {
