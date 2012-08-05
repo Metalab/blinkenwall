@@ -144,6 +144,7 @@ Blinkenwall = function() {
 	this.onClose = function(evt) {
 		this.logToConsole("DISCONNECTED");
 		this.setGuiConnected(false);
+		this.ClearServerInfos();
 	};
 	
 	this.onMessage = function(evt) {
@@ -170,6 +171,11 @@ Blinkenwall = function() {
 	this.clearLog = function() {
 		$("#consoleLog").empty();
 	};
+
+	this.ClearServerInfos = function() {
+		$("#ServerText").text("")
+		//$("#ServerImage").hide();
+	}
 	
 	this.ParseServerCommand = function(message) {
 		//alert(message);
@@ -180,7 +186,10 @@ Blinkenwall = function() {
 		case "tetris":
 			if (tokens[1]=="stone") {
 				$("#ServerImage").prop("src", "http://10.20.30.150/gamefiles/tetris/" + tokens[2] + ".png");
-				$("#ServerText").text("Nächster Stein");
+				//$("#ServerImage").show();
+			}
+			if (tokens[1]=="points") {
+				$("#ServerText").text("Sie haben " + tokens[2] + " Punkte erreicht.<br>Nächster Stein:");
 			}
 			break;
 		default:
@@ -215,6 +224,7 @@ $(function() {
 	$("#btn-gamepad-right").click(function() { return blinkenwall.gamepadSend("64"); });
 	$("#btn-gamepad-1").click(function() { return blinkenwall.gamepadSend("71"); });
 	$("#btn-gamepad-2").click(function() { return blinkenwall.gamepadSend("65"); });
+	//$("#btn-gamepad-2").click(function() { return blinkenwall.ParseServerCommand("tetris stone 5"); });
 	
 	
 	blinkenwall.renewRandomUUID();
