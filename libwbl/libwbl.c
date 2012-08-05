@@ -352,3 +352,22 @@ int bw_get_cmd_block(BwlSocketContext * sc,
 {
     return bw_get_cmd_block_timeout(sc, connection, uuid, -1);
 }
+
+void bw_send_back(BwlSocketContext * sc, int connection, char * string)
+{
+    int fd_send;
+    char outbuf[1024];
+    size_t out_len = 1024;
+
+    if (connection < 0 || connection >= BW_MAX_CONNECTIONS)
+        return;
+
+    fd_send = sc->fd_client[connection];
+    if (fd_send < 0)
+        return;
+
+    ws_make_frame((uint8_t*)string, strlen(string),
+                  (uint8_t*)outbuf, &out_len, WS_TEXT_FRAME);
+
+    send(fd_send, outbuf, out_len, 0);
+}

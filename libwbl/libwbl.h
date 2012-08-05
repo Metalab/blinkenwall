@@ -31,6 +31,8 @@
 #define BW_CMD_BUTTON2_RELEASED 0xC
 #define BW_CMD_LAST             0x78
 
+static const uint64_t bw_sendback_prefix = 0x2b49e6b6eafc4036;
+
 typedef struct BwlSocketContext {
     int fd_listen;                     ///< File descriptor of listen socket
     int fd_client[BW_MAX_CONNECTIONS]; ///< File descriptor of connected socket
@@ -121,5 +123,15 @@ int bw_get_cmd_block_timeout(BwlSocketContext * socket_context,
 int bw_get_cmd_block(BwlSocketContext * socket_context,
                      int * connection,
                      char ** uuid);
+
+/**
+ * Sends back a string to the client.
+ * @param connection filled with the number of the
+ * connection to send the command.
+ * @param string data to send, must be 0 terminated
+ */
+void bw_send_back(BwlSocketContext * socket_context,
+                  int connection,
+                  char * string);
 
 #endif

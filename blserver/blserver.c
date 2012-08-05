@@ -222,18 +222,33 @@ int main(int argc, char * argv[])
                     }
                 }
 
-                /** Send data from child process to wall */
+                /** Read data from child process,
+                 *  send to wall and to client */
 
                 if (FD_ISSET(fd_read, &readfds)) {
-                    uint8_t rgb_data[BW_WALL_SIZE];
-
+                    uint8_t rgb_data[BW_WALL_SIZE * 3];
 #ifdef BW_DEBUG
                     fprintf(stderr, "Got data for wall.\n");
 #endif
-
-                    if (read(fd_read, rgb_data, BW_WALL_SIZE) ==
-                        BW_WALL_SIZE) {
-                        write(fd_bwpipe, rgb_data, BW_WALL_SIZE);
+                    if (read(fd_read, rgb_data, BW_WALL_SIZE * 3) ==
+                        BW_WALL_SIZE * 3) {
+                        uint64_t cmddata = (uint64_t)rgb_data[0] | 
+                            (uint64_t)rgb_data[1] << 8 |
+                            (uint64_t)rgb_data[2] << 16 |
+                            (uint64_t)rgb_data[3] << 24 |
+                            (uint64_t)rgb_data[4] << 32 |
+                            (uint64_t)rgb_data[5] << 40 |
+                            (uint64_t)rgb_data[6] << 48 |
+                            (uint64_t)rgb_data[7] << 56;
+                        if (cmddata != bw_sendback_prefix) {
+                            write(fd_bwpipe, rgb_data, BW_WALL_SIZE * 3);
+                        } else {
+#ifdef BW_DEBUG
+                            fprintf(stderr, "Sending command back to client: %s\n",
+                                    (char*)(rgb_data+8));
+#endif
+                            bw_send_back(sc, 0, (char*)(rgb_data+8));
+                        }
                     } else {
 #ifdef BW_DEBUG
                         fprintf(stderr, "Input pipe closed\n");
