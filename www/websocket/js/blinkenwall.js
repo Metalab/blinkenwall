@@ -168,7 +168,7 @@ Blinkenwall = function() {
 	this.onClose = function(evt) {
 		this.logToConsole("DISCONNECTED");
 		this.setGuiConnected(false);
-		this.ClearServerInfos();
+		//this.ClearServerInfos();
 	};
 	
 	this.onMessage = function(evt) {
@@ -209,11 +209,11 @@ Blinkenwall = function() {
 		{
 		case "tetris":
 			if (tokens[1]=="stone") {
-				$("#ServerImage").prop("src", "http://10.20.30.150/gamefiles/tetris/" + tokens[2] + ".png");
+				$("#ServerImage").prop("src", "http://10.20.30.26/gamefiles/tetris/" + tokens[2] + ".png");
 				//$("#ServerImage").show();
 			}
 			if (tokens[1]=="points") {
-				$("#ServerText").text("Sie haben " + tokens[2] + " Punkte erreicht.<br>Nächster Stein:");
+				$("#ServerText").html("Sie haben " + tokens[2] + " Punkte erreicht.<br>Nächster Stein:");
 			}
 			break;
 		default:
