@@ -1,0 +1,197 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+	<head>
+
+		<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+		<title>Blinkenwall</title>
+		<link href="css/main.css" media="screen" rel="Stylesheet" type="text/css" />
+		<script src="js/jquery.js" type="text/javascript"></script>
+
+		<script src="js/ajaxform.js" type="text/javascript"></script>
+		<script type="text/javascript" src="js/wallpaint.js"></script>
+	</head>
+	<body>
+		<div id="container">
+			<div id="paintboard">
+<table id="blinkentable" cellspacing="10" cellpadding="0" border="0">
+<tr>
+  <td></td>
+
+  <td></td>
+  <td></td>
+  <td></td>
+  <td></td>
+  <td></td>
+  <td></td>
+  <td></td>
+  <td></td>
+</tr>
+
+<tr>
+  <td></td>
+  <td></td>
+  <td></td>
+  <td></td>
+  <td></td>
+  <td></td>
+  <td></td>
+  <td></td>
+
+  <td></td>
+</tr>
+
+<tr>
+  <td></td>
+  <td></td>
+  <td></td>
+  <td></td>
+  <td></td>
+  <td></td>
+
+  <td></td>
+  <td></td>
+  <td></td>
+</tr>
+
+<tr>
+  <td></td>
+  <td></td>
+  <td></td>
+  <td></td>
+
+  <td></td>
+  <td></td>
+  <td></td>
+  <td></td>
+  <td></td>
+</tr>
+
+<tr>
+  <td></td>
+  <td></td>
+
+  <td></td>
+  <td></td>
+  <td></td>
+  <td></td>
+  <td></td>
+  <td></td>
+  <td></td>
+</tr>
+</table>
+<div id="loadoptions" style="display:none" class="options hideableoptions">
+<h3>Load animations from Server</h3>
+<p>
+<label for="animationsonserverdropdown">Animations: </label>
+<select id="animationsonserverdropdown" class="button">
+</select>
+</p>
+<p>
+<label for="authordisplay">Author: </label>
+<span id="authordisplay" class="anzeigefeld"></span>
+</p>
+<p>
+<label for="framesno">Frames No: </label>
+<span id="framesno" class="anzeigefeld"/></span>
+</p>
+<p>
+<input type=submit name="" value="Load selected animation" class="button" id="loadsubmit"/>
+</p>
+</div>
+			</div><!-- /paintboard -->
+
+			<div id="options">
+
+                                <div id="animationwrapper">
+                                        <input type="button" id="playanimation" value="Show animation in browser"  />
+
+                                </div><!-- /animationwrapper -->
+
+				<div id="hideableoptions" class="hideableoptions">
+                                        <input type="button" id="playtempanimation" value="Show animation on the wall"  />
+
+					<div id="coloroptions" class="options">
+						<h3>Color Options</h3>
+						<div id="cp_base">
+						<ul id="colorpicker">
+						</ul>
+						<div style="clear:both"></div>
+						<input id="currentcolor_yay" type="text" size="6" maxlength="6"/>
+						</div>
+						
+						<p>
+							<input type=button id="paintall" value="Paint all bricks" class="button" />
+
+							<input type=button id="clearall" value="Empty all bricks" class="button" />
+						</p>
+					</div><!-- /coloroptions -->
+
+					<div id="frameoptions" class="options">
+						<h3>Frame Options</h3>
+						<p>
+							<label for="frametimer">Timer (ms):</label>
+
+							<input type="text" id="frametimer" value="500" name="frametimer" class="text" />
+						</p>
+						<p>
+							<input type="button" id="prevframe" value="<<" disabled class="button" />
+							<input type="text" id="framecounter" value="1/1" name="framecounter" class="text" readonly="readonly" />
+							<input type="button" id="nextframe" value=">>" class="button" />
+						</p>
+						<p>
+							<input type=button id="deleteframe" value="Delete Frame" class="button" />
+
+						</p>
+						<p>
+							<input type=button id="copyframe" value="Duplicate previous Frame" disabled="disabled" class="button" />
+						</p>
+					</div><!-- /frameoptions -->
+
+					<div id="framemodifier" class="options">
+						<h3>Frame Modifiers</h3>
+						<div id="framemodifier_top">
+
+							<input type="button" id="moveup" value="up" class="button" />
+						</div>
+						<div id="framemodifier_middle">
+							<input type="button" id="moveleft" value="left" class="button" />
+							<input type="button" id="moveright" value="right" class="button" />
+						</div>
+						<div id="framemodifier_bottom">
+							<input type="button" id="movedown" value="down" class="button" />
+						</div>
+
+					</div><!-- /framemodifier -->
+					<br style="clear: both" />
+
+					<div id="saveoptions" class="options">
+						<h3>Save Options</h3>
+						<form method="post" action="cgi-bin/upload.cgi" id="saveform">
+							<p>
+								<label for="animname">Title of Animation:</label>
+
+								<input type="text" name="animname" id="animname" class="text" />
+							</p>
+							<p>
+								<label for="animabout">Author:</label>
+								<input type="text" name="animauthor" id="animabout" class="text" />
+							</p>
+							<p>
+								<input type="button" name="saveanimation" id="saveanimation" value="Save Animation" class="button" />
+                                                                <input type="button" name="clearanimation" id="clearanimation" value="Clear Animation" class="button" />
+
+
+							</p>
+							<textarea id="animation" name="animation"></textarea>
+							<input type=text name="framenumbers" id="framenumbercounter"/>
+							<input type=checkbox id="tempanim" name="tempanim" value="1" />
+						</form>
+					</div><!-- /saveoptions -->
+
+				</div><!-- /hideableoptions -->
+
+			</div><!-- /options -->
+
+		</div><!-- /container -->
+	</body>
+</html>

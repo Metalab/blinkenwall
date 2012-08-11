@@ -1,0 +1,200 @@
+* {
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 90%;
+	color: #999999;
+	background: #000000;
+}
+
+#container {
+	padding: 0.5em; 
+}
+
+#currentcolor_yay{display:none}
+
+#cp_base {clear:both;}
+
+#colorpicker{
+ width:338px;
+ margin: 0.5em;
+ }
+ #colorpicker li {
+  list-style:none;
+  float:left;
+  width:44px;
+  height:20px;
+  border:1px solid white;
+  margin:1px;
+}
+       
+
+
+
+
+#loadoptions {
+margin-top:1.5em;
+}
+
+
+
+#paintboard {
+	float: left;
+	background-image: url(../images/bg.jpg);
+	width: 576px;
+	height: 331px;
+	border: 2px solid #666666;
+}
+
+#options {
+	float: left;
+	margin: 0 0 0 0.5em;
+        width:357px;
+}
+
+.options h3 {
+	padding: 0.2em;
+	font-size: 1em;
+	color: #FFFFFF;
+	background: #666666;
+}
+
+.options p {
+	margin: 0.5em;
+}
+
+.options label {
+	display: block;
+	float: left;
+	padding: 0.2em 0;
+}
+
+.options .text {
+	padding: 0.2em;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 90%;
+	border: 1px solid #999999;
+	background: #FFFFFF;
+}
+
+.options .button {
+	padding: 0.2em;
+	color: #FFFFFF;
+	border: 1px solid #999999;
+	background: #000000;
+}
+
+
+
+.anzeigefeld {
+        padding: 0.2em;
+        color: #FFFFFF;
+        border: none;
+        background: #000000;
+
+}
+
+.options {
+	margin: 0 0 0.5em 0;
+	border: 2px solid #666666;
+}
+
+#frameoptions {
+	float: left;
+	width: 13em;
+	height: 12em;
+}
+
+#frameoptions label {
+	display: inline;
+	float: none;
+}
+
+#frameoptions p {
+	text-align: center;
+}
+
+#framecounter {
+	width: 40px;
+}
+
+#frametimer {
+	width: 40px;
+}
+
+#framemodifier {
+	float: right;
+	width: 10.5em;
+	height: 12em;
+}
+
+#framemodifier .button {
+	width: 5em;
+}
+
+#framemodifier_top {
+	margin: 2em 0 0 0;
+	text-align: center;
+}
+
+#framemodifier_bottom {
+	text-align: center;
+}
+
+#framemodifier_middle {
+	padding: 0.3em 0;
+	text-align: center;
+}
+
+#saveoptions {
+
+}
+
+.options label {
+	width: 9em;
+}
+
+#animation {
+	width: 400px;
+	height: 200px;
+	display:none;
+}
+
+
+#tempanim,#framenumbercounter {
+ display:none;
+}
+
+#animationwrapper {
+ margin-bottom: 0.5em;
+}
+
+#playtempanimation, #playanimation { 
+background-color:black;
+border:2px solid red; 
+width: 100%; 
+color:white;
+font-size: 1.4em;
+margin-bottom:5px;
+}
+
+#coloroptions {
+
+}
+
+#blinkentable {
+	margin-top: 10px;
+
+}
+
+#blinkentable td {
+	width: 50px; 
+	height: 50px; 
+	border: 1px solid black;
+	opacity: 0.5;
+	background-color: #000000;
+}
+
