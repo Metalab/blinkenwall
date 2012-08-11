@@ -2,7 +2,7 @@ Blinkenwall = function() {
 	var websocket;
 	var myUUID
 	
-	this.doConnect = function() {
+	this.doConnect = function(uri) {
 		if (window.MozWebSocket)
 		{
 			this.logToConsole('<span style="color: red;"><strong>Info:</strong> This browser supports WebSocket using the MozWebSocket constructor</span>');
@@ -14,7 +14,8 @@ Blinkenwall = function() {
 			return false;
 		}
 		var that = this;
-		this.websocket = new WebSocket($("#wsUri").val());
+		//this.websocket = new WebSocket($("#wsUri").val());
+		this.websocket = new WebSocket(uri);
 		this.websocket.onopen = function(evt) { that.onOpen(evt) };
 		this.websocket.onclose = function(evt) { that.onClose(evt) };
 		this.websocket.onmessage = function(evt) { that.onMessage(evt) };
@@ -35,35 +36,26 @@ Blinkenwall = function() {
 	
 	
 	// load apps from server and update Buttons!
-	this.getAppsFromServer = function()	{
-		$.get("cgi-bin/get_animations.cgi", {}, function(data)
-		{ 
-		entries = data.split("\n");
-		for (var x=0; x<(entries.length-1);x++)
-		{
-			//name_author_frames = entries[x].split(".");
-		alert(entries[x]);
-			// set the very first entry once..
-			/*if(!x) 
+	this.getAppsFromServer = function() {
+		var that=this;
+		$.get("./cgi-bin/get_apps.cgi", {}, function(data){ 
+			var allButtonsSrc = "";
+			entries = data.split("\n");
+			for (var x=0; x<(entries.length-1);x++)
 			{
-				$("#authordisplay").html(name_author_frames[1]);
-				$("#framesno").html(name_author_frames[2]);
-			}*/
-			//$("#animationsonserverdropdown").append("<option value='"+entries[x]+"'>"+name_author_frames[0]+" ("+name_author_frames[2]+")"+"</option>")
-		}
-	
-		/*$("#animationsonserverdropdown").change(function(e){ 
-		n_a = $(this).val().split(".");
-		$("#authordisplay").html(n_a[1]);
-		$("#framesno").html(n_a[2]);
-		});
-	
-	
-		
-		$("#loadoptions").show();
-		} );*/
-	
-	
+				//allButtonsSrc = allButtonsSrc + " <button class=\"btn btn-primary\" onclick=\"return blinkenwall.doConnect('ws://" + that.IP + ":15633/" + entries[x] + "');\">Play " + entries[x] + "</button> ";
+				//allButtonsSrc = allButtonsSrc + " <button class=\"btn btn-primary\" id=\"gameButton_" + entries[x] + "\">Play " + entries[x] + "</button> ";
+				var myhtml=$("<button class=\"btn btn-primary\" id=\"gameButton_" + entries[x] + "\">Play " + entries[x] + "</button>");
+				(function(x2){
+					myhtml.click(function() {
+						return that.doConnect("ws://" + that.IP + ":15633/" + entries[x2] );
+					});
+				})(x);
+				myhtml.appendTo("#gameButtons");
+			}
+			
+		} );
+		return false;
 	}
 	
 	this.renewRandomUUID = function() {
@@ -239,10 +231,12 @@ $(function() {
 		$("#noWebSocketSupp").prop("display", "block");
 	
 	var blinkenwall = new Blinkenwall();
+	blinkenwall.IP="10.20.30.26";
 	
 	//$("#wsUri").val("ws://10.20.30.176:15633/blinkenwallcontrol");
-	$("#wsUri").val("ws://10.20.30.150:15633/blinkenwallcontrol");
-	$("#connect").click(function() { return blinkenwall.doConnect(); });
+	$("#wsUri").val("ws://" + blinkenwall.IP + ":15633/blinkenwallcontrol");
+	//$("#connect").click(function() { return blinkenwall.doConnect(); });
+	$("#connect").click(function() { return blinkenwall.doConnect($("#wsUri").val()); });
 	$("#disconnect").click(function() { return blinkenwall.doDisconnect(); });
 	$("#send").click(function() { return blinkenwall.doSend(); });
 	$("#clearLogBut").click(function() { return blinkenwall.clearLog(); });
@@ -263,9 +257,9 @@ $(function() {
 	
 	blinkenwall.setGuiConnected(false);
 	
-	
+	blinkenwall.getAppsFromServer();
 	//this is cool for debug
-	blinkenwall.doConnect();
+	//blinkenwall.doConnect();
 	
 	$('body').on('keydown', function( e ){
 		if(!blinkenwall.connected)
