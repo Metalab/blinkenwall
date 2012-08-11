@@ -34,6 +34,38 @@ Blinkenwall = function() {
 	};
 	
 	
+	// load apps from server and update Buttons!
+	this.getAppsFromServer = function()	{
+		$.get("cgi-bin/get_animations.cgi", {}, function(data)
+		{ 
+		entries = data.split("\n");
+		for (var x=0; x<(entries.length-1);x++)
+		{
+			//name_author_frames = entries[x].split(".");
+		alert(entries[x]);
+			// set the very first entry once..
+			/*if(!x) 
+			{
+				$("#authordisplay").html(name_author_frames[1]);
+				$("#framesno").html(name_author_frames[2]);
+			}*/
+			//$("#animationsonserverdropdown").append("<option value='"+entries[x]+"'>"+name_author_frames[0]+" ("+name_author_frames[2]+")"+"</option>")
+		}
+	
+		/*$("#animationsonserverdropdown").change(function(e){ 
+		n_a = $(this).val().split(".");
+		$("#authordisplay").html(n_a[1]);
+		$("#framesno").html(n_a[2]);
+		});
+	
+	
+		
+		$("#loadoptions").show();
+		} );*/
+	
+	
+	}
+	
 	this.renewRandomUUID = function() {
 
 		var s = [], itoh = '0123456789ABCDEF';
