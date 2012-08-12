@@ -1,0 +1,10 @@
+#!/bin/bash
+command=$1
+
+killall blinky_start
+killall blinkblink
+
+if [ "$command" ==  "start" ]; then
+    /usr/local/bin/blinky_start &
+fi
+

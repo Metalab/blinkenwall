@@ -1,0 +1,14 @@
+#!/bin/ash
+
+echo $$ > /tmp/playmovies.pid
+
+while true; do
+  for file in `ls /var/www/animations/*`; do
+    if [ -f /var/www/animations/playthisnow ]; then
+      blinkblink < /var/www/animations/playthisnow > /var/blinkenwall/bw_pipe;
+      rm  /var/www/animations/playthisnow;
+    fi;
+       
+    blinkblink < $file > /var/blinkenwall/bw_pipe;
+  done;
+done;

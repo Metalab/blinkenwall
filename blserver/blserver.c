@@ -9,6 +9,8 @@
 #define BW_PIPE_PATH "/var/blinkenwall/bw_pipe"
 #define BW_BINARY_PATH "/usr/local/lib/blinkenwall"
 #define BW_CMD_QUEUE_SIZE 10
+#define BW_RUN_BEFORE_CONNECT "/usr/local/bin/blinkyrun start"
+#define BW_RUN_AFTER_CONNECT "/usr/local/bin/blinkyrun stop"
 
 #define BW_DEBUG 1
 
@@ -16,6 +18,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
@@ -45,7 +48,9 @@ int main(int argc, char * argv[])
 #ifdef BW_DEBUG
         fprintf(stderr, "Waiting for connections\n");
 #endif
+        system(BW_RUN_BEFORE_CONNECT);
         con = bw_wait_for_connections(sc, &resource);
+        system(BW_RUN_AFTER_CONNECT);
         if (con >= 0) {
 #ifdef BW_DEBUG
             fprintf(stderr, "New connection\n");
@@ -270,6 +275,8 @@ int main(int argc, char * argv[])
                     bw_connection_close(sc, i);
                 }
             }
+
+            waitpid(pid, NULL, 0);
         }
     }
 
