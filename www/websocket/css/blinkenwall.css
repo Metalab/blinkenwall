@@ -15,3 +15,7 @@
 	width: 100px;
 	height: 100px;
 }
+
+#gameButtons > button {
+	margin-right: 5px;
+}
