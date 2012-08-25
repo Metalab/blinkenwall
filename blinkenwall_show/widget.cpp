@@ -56,7 +56,7 @@ Widget::Widget(Helper *helper, QWidget *parent)
 void Widget::animate()
 {
     if (!feof(stdin)) {
-        int ret = fread(Framebuffer, 1, 135, stdin);
+        int ret = fread(Framebuffer, 1, WALL_WIDTH * WALL_HEIGHT * 3, stdin);
         if (ret)
             repaint();
     }
