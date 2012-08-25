@@ -13,7 +13,7 @@
 #define WALL_HEIGHT 9
 #define WALL_SIZE WALL_WIDTH * WALL_HEIGHT
 #define COLOUR 0
-#define MAX_INTENSITY 5
+#define MAX_INTENSITY 255
 #define X_SLEEPTIME_BETWEEN 100
 
 //CharPosition ist die derzeitige position beim abarbeiten des aktuellen Buchstabens
@@ -32,7 +32,7 @@ uint8_t TextPos;
 uint8_t CharBlink;
 
 
-uint8_t screenbuffer[WALL_WIDTH][WALL_HEIGHT][3];
+uint8_t screenbuffer[WALL_HEIGHT][WALL_WIDTH][3];
 
 
 void msleep (unsigned int ms) {
@@ -46,52 +46,10 @@ void msleep (unsigned int ms) {
 
 
 void DrawScreenbufferToStdout(void) {
-	
-	int x, y;
-	
-	
-	for (y=0; y<WALL_HEIGHT; ++y) {
-		for (x=WALL_WIDTH-6; x>-1; --x) {
-		//for (x=0; x<WALL_WIDTH; ++x) {
-			putchar(screenbuffer[x][y][0]);
-			putchar(screenbuffer[x][y][1]);
-			putchar(screenbuffer[x][y][2]);
-		}
-		
-			putchar(screenbuffer[17][y+1][0]);
-			putchar(screenbuffer[17][y+1][1]);
-			putchar(screenbuffer[17][y+1][2]);
-			
-			putchar(screenbuffer[16][y+1][0]);
-			putchar(screenbuffer[16][y+1][1]);
-			putchar(screenbuffer[16][y+1][2]);
-			
-			putchar(screenbuffer[15][y+1][0]);
-			putchar(screenbuffer[15][y+1][1]);
-			putchar(screenbuffer[15][y+1][2]);
-			
-			putchar(screenbuffer[14][y+1][0]);
-			putchar(screenbuffer[14][y+1][1]);
-			putchar(screenbuffer[14][y+1][2]);
-			
-			putchar(screenbuffer[13][y+1][0]);
-			putchar(screenbuffer[13][y+1][1]);
-			putchar(screenbuffer[13][y+1][2]);
-			
+	fwrite(screenbuffer, 1, WALL_WIDTH * WALL_HEIGHT * 3, stdout);
 
-				
-
-			
-	}
-	
-	/*for (y=0; y<WALL_HEIGHT; ++y) {
-		for (x=WALL_WIDTH-1; x>-1; --x) {
-		//for (x=0; x<WALL_WIDTH; ++x) {
-			fwrite(screenbuffer[x][y], 1, 3, stdout);
-		}
-	}*/
-	//fwrite(screenbuffer, 1, WALL_WIDTH * WALL_HEIGHT * 3, stdout);
 	fflush(stdout);
+
 }
 
 
@@ -100,7 +58,7 @@ void DrawScreenbufferToStderr(void) {
 	int x, y;
 	for (y=0; y<WALL_HEIGHT; ++y) {
 		for (x=0; x<WALL_WIDTH; ++x) {
-			if ( screenbuffer[x][y][0] > 0 || screenbuffer[x][y][1] > 0 || screenbuffer[x][y][2] > 0 ){
+			if ( screenbuffer[y][x][0] > 0 || screenbuffer[y][x][1] > 0 || screenbuffer[y][x][2] > 0 ){
 				fprintf(stderr, "#");
 			}else{
 				fprintf(stderr, " ");
@@ -117,9 +75,9 @@ void MoveScreenbufferLeft(void) {
 	int x, y;
 	for (y=0; y<WALL_HEIGHT; ++y) {
 		for (x=0; x<WALL_WIDTH-1; ++x) {
-			screenbuffer[x][y][0] = screenbuffer[x+1][y][0];
-			screenbuffer[x][y][1] = screenbuffer[x+1][y][1];
-			screenbuffer[x][y][2] = screenbuffer[x+1][y][2];
+			screenbuffer[y][x][0] = screenbuffer[y][x+1][0];
+			screenbuffer[y][x][1] = screenbuffer[y][x+1][1];
+			screenbuffer[y][x][2] = screenbuffer[y][x+1][2];
 		}
 	}
 	
@@ -133,12 +91,12 @@ void WrtiteCharOut(void) {
 		//printf("aktueller buchstabe: %c\n", AktuellerChar);
 		
 		//schleife von 0 bis 8 durchlaufen lassen und alle 9 bit der Spalte anzuzeigen
-		for (uint8_t i=0; i!=9; i++)
+		for (uint8_t i=0; i<=8; i++)
 		{
 			if ( font[AktuellerChar][i] & (1<<CharPosition) ) {
-				screenbuffer[WALL_WIDTH-1][i][COLOUR]=MAX_INTENSITY;
+				screenbuffer[i][WALL_WIDTH-1][COLOUR]=MAX_INTENSITY;
 			}else{
-				screenbuffer[WALL_WIDTH-1][i][COLOUR]=0;
+				screenbuffer[i][WALL_WIDTH-1][COLOUR]=0;
 			}
 		}
 		
@@ -157,7 +115,7 @@ int main(int argc, char * argv[]) {
 	char* TextString = argv[1];
 	
 	
-	printf("text: %s\n", TextString);
+	fprintf(stderr, "text: %s\n", TextString);
 	
 	
 	CharPosition = 8;
