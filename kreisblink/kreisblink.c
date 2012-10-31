@@ -47,7 +47,7 @@ int main(int argc, char * argv[])
     depth = visual_video_depth_enum_from_value(24);
     visual_bin_switch_set_style (bin, VISUAL_SWITCH_STYLE_MORPH);
     visual_bin_switch_set_steps (bin, 10);
-    visual_bin_set_supported_depth (bin, VISUAL_VIDEO_DEPTH_ALL);
+    visual_bin_set_supported_depth (bin, VISUAL_VIDEO_DEPTH_24BIT);
 
     if (!(video = visual_video_new ())) {
         x_exit ("Cannot create a video surface");
