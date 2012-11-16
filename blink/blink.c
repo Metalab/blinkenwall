@@ -68,29 +68,25 @@ void bw_wall_config() {
 
 void bw_to_wall(const uint8_t * rgb_data) {
     const uint8_t * rgb_data_tmp;
-    uint32_t outbuf[BW_WALL_SIZE];
+    uint8_t outbuf[BW_WALL_SIZE*3];
     int x, y;
 
     rgb_data_tmp = rgb_data;
     for (y=BW_WALL_HEIGHT-1; y>=0; --y) {
         for (x=BW_WALL_WIDTH-1; x>=0; --x) {
             int idx;
-            uint32_t val =
-                (((uint32_t)rgb_data_tmp[1] << 2) +
-                 (rgb_data_tmp[1] >> 6)) |
-                (((uint32_t)rgb_data_tmp[0] << 2) +
-                 (rgb_data_tmp[0] >> 6)) << 10 |
-                (((uint32_t)rgb_data_tmp[2] << 2) +
-                 (rgb_data_tmp[2] >> 6)) << 20;
 
             idx = BW_WALL_HEIGHT * x;
             idx += x%2==0 ? (BW_WALL_HEIGHT-1-y) : y;
+            idx += 3;
 
-            outbuf[idx] = BSWAP32C(val);
+            outbuf[idx] = rgb_data_tmp[1];
+            outbuf[idx+1] = rgb_data_tmp[0];
+            outbuf[idx+2] = rgb_data_tmp[2];
             rgb_data_tmp += 3;
         }
     }
 
-    bcm2835_spi_transfern((char*)outbuf, BW_WALL_SIZE * 4);
-    bw_latch();
+    bcm2835_spi_transfern((char*)outbuf, BW_WALL_SIZE * 3);
+    usleep(500);
 }
