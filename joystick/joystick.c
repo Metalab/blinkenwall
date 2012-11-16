@@ -76,6 +76,7 @@ struct command read_command(struct controller_handle * handle,
     struct command c;
 
     c.controller = -1;
+    c.number = 0;
 
     FD_ZERO(&readfds);
     for (i=0; i<handle->n_joysticks; i++) {
@@ -98,6 +99,7 @@ struct command read_command(struct controller_handle * handle,
                 if (len == sizeof(jse)) {
                     c.controller = i;
                     c.number = jse.number;
+                    c.type = jse.type;
                     c.value = jse.value;
                 }
             }

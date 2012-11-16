@@ -13,6 +13,7 @@ struct controller_handle;
 struct command
 {
     int8_t  controller;       /* which controller the event came from. -1 for no event */
+    uint8_t type;             /* event type */
     uint8_t number;           /* axis/button number */
     int16_t value;            /* value of event */
 };
