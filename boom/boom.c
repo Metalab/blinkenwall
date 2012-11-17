@@ -19,9 +19,10 @@
 #define FIELD_SPECIAL_NONE  0
 #define FIELD_SPECIAL_FIRE  1
 #define FIELD_SPECIAL_BOMB  2
+#define FIELD_SPECIAL_RED   3
 
 #define DEFAULT_BOMB_TICKS  15
-#define BEGIN_FIRE          5
+#define BEGIN_FIRE          2
 #define BEGIN_BOMBS         1
 
 #define PLAYERS             2
@@ -66,6 +67,7 @@ struct player
     int fire;
     int max_bombs;
     int cur_bombs;
+    int has_red_bombs;
     int alive;
     int last_move;
 };
@@ -75,6 +77,7 @@ struct bomb
     int x;
     int y;
     int ticks;
+    int is_red;
     int length;
     int current_length;
     int max_length[4];
@@ -170,6 +173,7 @@ void draw_field(struct playfield * f, struct player * pl,
                 struct monster * mons, int num_mons)
 {
     uint8_t field[FIELD_HEIGHT * FIELD_WIDTH * 3];
+    int playerpos;
     int x, y, i, j, k;
 
     for (y=0; y<FIELD_WIDTH; y++)
@@ -182,18 +186,18 @@ void draw_field(struct playfield * f, struct player * pl,
             switch (f[pos].type) {
             case FIELD_TYPE_EMPTY:
                 field[fieldpos+0] = 0;
-                field[fieldpos+1] = 0;
-                field[fieldpos+2] = 0;
+                field[fieldpos+1] = 89;
+                field[fieldpos+2] = 146;
                 break;
             case FIELD_TYPE_HARDWALL:
-                field[fieldpos+0] = 255;
-                field[fieldpos+1] = 255;
-                field[fieldpos+2] = 255;
+                field[fieldpos+0] = 113;
+                field[fieldpos+1] = 113;
+                field[fieldpos+2] = 113;
                 break;
             case FIELD_TYPE_WALL:
-                field[fieldpos+0] = 92;
-                field[fieldpos+1] = 35;
-                field[fieldpos+2] = 0;
+                field[fieldpos+0] = 76;
+                field[fieldpos+1] = 76;
+                field[fieldpos+2] = 76;
                 break;
             default:
                 break;
@@ -203,13 +207,18 @@ void draw_field(struct playfield * f, struct player * pl,
                 (SHOW_SPECIAL_FIELDS && f[pos].type == FIELD_TYPE_WALL)) {
                 switch (f[pos].special) {
                 case FIELD_SPECIAL_FIRE:
-                    field[fieldpos+0] = 200;
-                    field[fieldpos+1] = 0;
+                    field[fieldpos+0] = 219;
+                    field[fieldpos+1] = 81;
                     field[fieldpos+2] = 0;
                     break;
                 case FIELD_SPECIAL_BOMB:
-                    field[fieldpos+0] = 0;
-                    field[fieldpos+1] = 200;
+                    field[fieldpos+0] = 48;
+                    field[fieldpos+1] = 48;
+                    field[fieldpos+2] = 48;
+                    break;
+                case FIELD_SPECIAL_RED:
+                    field[fieldpos+0] = 243;
+                    field[fieldpos+1] = 0;
                     field[fieldpos+2] = 0;
                     break;
                 }
@@ -222,38 +231,63 @@ void draw_field(struct playfield * f, struct player * pl,
         int fieldpos = (bomb[i].y * FIELD_WIDTH + bomb[i].x) * 3;
         if (bomb[i].ticks > 0) {
             if (bomb[i].ticks % 2 == 0) {
-                field[fieldpos+0] = 0;
-                field[fieldpos+1] = 40;
-                field[fieldpos+2] = 0;
+                if (bomb[i].is_red) {
+                    field[fieldpos+0] = 121;
+                    field[fieldpos+1] = 0;
+                    field[fieldpos+2] = 0;
+                } else {
+                    field[fieldpos+0] = 0;
+                    field[fieldpos+1] = 0;
+                    field[fieldpos+2] = 0;
+                }
             } else {
-                field[fieldpos+0] = 0;
-                field[fieldpos+1] = 60;
-                field[fieldpos+2] = 0;
+                if (bomb[i].is_red) {
+                    field[fieldpos+0] = 243;
+                    field[fieldpos+1] = 0;
+                    field[fieldpos+2] = 0;
+                } else {
+                    field[fieldpos+0] = 48;
+                    field[fieldpos+1] = 48;
+                    field[fieldpos+2] = 48;
+                }
             }
         }
     }
 
-    for (i=0; i<PLAYERS; i++)
-    {
-        int fieldpos = (pl[i].y * FIELD_WIDTH + pl[i].x) * 3;
-        if (pl[i].alive) {
-            field[fieldpos+0] = 0;
-            field[fieldpos+1] = 0;
-            field[fieldpos+2] = 255;
-        } else if (GHOST_MODE) {
-            field[fieldpos+0] = 0;
-            field[fieldpos+1] = 0;
-            field[fieldpos+2] = 50;
-        }
+    if (pl[0].alive) {
+        playerpos = (pl[0].y * FIELD_WIDTH + pl[0].x) * 3;
+        field[playerpos+0] = 0;
+        field[playerpos+1] = 0;
+        field[playerpos+2] = 211;
     }
+    if (pl[1].alive) {
+        playerpos = (pl[1].y * FIELD_WIDTH + pl[1].x) * 3;
+        field[playerpos+0] = 203;
+        field[playerpos+1] = 203;
+        field[playerpos+2] = 203;
+    }
+    if (pl[2].alive) {
+        playerpos = (pl[2].y * FIELD_WIDTH + pl[2].x) * 3;
+        field[playerpos+0] = 211;
+        field[playerpos+1] = 0;
+        field[playerpos+2] = 0;
+    }
+    if (pl[3].alive) {
+        playerpos = (pl[3].y * FIELD_WIDTH + pl[3].x) * 3;
+        field[playerpos+0] = 146;
+        field[playerpos+1] = 146;
+        field[playerpos+2] = 146;
+    }
+
+    //TODO: Colors for ghost mode
 
     for (i=0; i<num_mons; i++)
     {
         int fieldpos = (mons[i].y * FIELD_WIDTH + mons[i].x) * 3;
         if (mons[i].alive) {
-            field[fieldpos+0] = 180;
-            field[fieldpos+1] = 0;
-            field[fieldpos+2] = 180;
+            field[fieldpos+0] = 213;
+            field[fieldpos+1] = 190;
+            field[fieldpos+2] = 139;
         }
     }
 
@@ -273,8 +307,8 @@ void draw_field(struct playfield * f, struct player * pl,
                         if (nx >= 0 && nx < FIELD_WIDTH &&
                             ny >= 0 && ny < FIELD_HEIGHT) {
                             int npos = (ny * FIELD_WIDTH + nx) * 3;
-                            field[npos+0] = 255;
-                            field[npos+1] = 0;
+                            field[npos+0] = 243;
+                            field[npos+1] = 113;
                             field[npos+2] = 0;
                         }
                     }
@@ -308,6 +342,9 @@ void populate_playfield(struct playfield * pf,
                 break;
             case 1:
                 pf[pos].special = FIELD_SPECIAL_BOMB;
+                break;
+            case 2:
+                pf[pos].special = FIELD_SPECIAL_RED;
                 break;
             default:
                 pf[pos].special = FIELD_SPECIAL_NONE;
@@ -429,6 +466,7 @@ int main(int argc, char * argv[])
         pl[i].fire = BEGIN_FIRE;
         pl[i].max_bombs = BEGIN_BOMBS;
         pl[i].cur_bombs = 0;
+        pl[i].has_red_bombs = 0;
         pl[i].alive = 1;
         pl[i].last_move = 0;
     }
@@ -527,6 +565,7 @@ int main(int argc, char * argv[])
                     bm[n_bombs].x = pl[p].x;
                     bm[n_bombs].y = pl[p].y;
                     bm[n_bombs].ticks = DEFAULT_BOMB_TICKS;
+                    bm[n_bombs].is_red = pl[p].has_red_bombs;
                     bm[n_bombs].length = pl[p].fire;
                     bm[n_bombs].max_length[0] = bm[n_bombs].length;
                     bm[n_bombs].max_length[1] = bm[n_bombs].length;
@@ -584,6 +623,9 @@ int main(int argc, char * argv[])
                                     break;
                                 case FIELD_SPECIAL_BOMB:
                                     pl[i].max_bombs++;
+                                    break;
+                                case FIELD_SPECIAL_RED:
+                                    pl[i].has_red_bombs = 1;
                                     break;
                                 default:
                                     break;
@@ -650,8 +692,8 @@ int main(int argc, char * argv[])
                                     if (k >= bm[i].max_length[j])
                                         break;
 
-                                    if (field[npos].type == FIELD_TYPE_WALL) {
-                                        field[npos].type = FIELD_TYPE_EMPTY;
+                                    if (!bm[i].is_red &&
+                                        field[npos].type == FIELD_TYPE_WALL) {
                                         bm[i].max_length[j] = k + 1;
                                     }
 
@@ -673,6 +715,10 @@ int main(int argc, char * argv[])
                                         }
                                     }
 
+                                    if (field[npos].type == FIELD_TYPE_EMPTY &&
+                                        k == bm[i].current_length - 1) {
+                                        field[npos].special = FIELD_SPECIAL_NONE;
+                                    }
                                     field[npos].type = FIELD_TYPE_EMPTY;
                                 }
                             }
