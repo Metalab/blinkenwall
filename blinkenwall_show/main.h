@@ -2,10 +2,10 @@
 #define MAIN_H
 
 
-#define WALL_WIDTH 9
-#define WALL_HEIGHT 5
+#define WALL_WIDTH 24
+#define WALL_HEIGHT 24
 #define WALL_SIZE WALL_WIDTH * WALL_HEIGHT
-#define DRAW_MULTIPLICATOR 50
+#define DRAW_MULTIPLICATOR 20
 //#define FRAME_DELAY 20
 
 #include <stdint.h>

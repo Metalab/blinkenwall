@@ -3,10 +3,14 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 #include "joystick.h"
+#include "joyrumble.h"
 
 #define FIELD_WIDTH         24
 #define FIELD_HEIGHT        24
+#define MAX_DISTANCE        33.941125497
+#define RUMBLE              0
 
 #define FIELD_TYPE_EMPTY    0
 #define FIELD_TYPE_HARDWALL 1
@@ -17,7 +21,7 @@
 #define FIELD_SPECIAL_BOMB  2
 
 #define DEFAULT_BOMB_TICKS  15
-#define BEGIN_FIRE          2
+#define BEGIN_FIRE          5
 #define BEGIN_BOMBS         1
 
 #define PLAYERS             2
@@ -28,24 +32,24 @@
 #define MONSTERS            6
 #define MONSTER_SPEED       10
 
-/*
-#define KEY_UP_P1    'd'
-#define KEY_DOWN_P1  'a'
-#define KEY_LEFT_P1  'w'
-#define KEY_RIGHT_P1 's'
-#define KEY_BOMB_P1  'q'
-#define KEY_UP_P2    'l'
-#define KEY_DOWN_P2  'j'
-#define KEY_LEFT_P2  'i'
-#define KEY_RIGHT_P2 'k'
-#define KEY_BOMB_P2  'u'
-*/
+
+#define KEY_UP_K1    'w'
+#define KEY_DOWN_K1  's'
+#define KEY_LEFT_K1  'a'
+#define KEY_RIGHT_K1 'd'
+#define KEY_BOMB_K1  'q'
+#define KEY_UP_K2    'i'
+#define KEY_DOWN_K2  'k'
+#define KEY_LEFT_K2  'j'
+#define KEY_RIGHT_K2 'l'
+#define KEY_BOMB_K2  'u'
 #define KEY_UP        8
 #define KEY_DOWN     10
 #define KEY_LEFT     11
 #define KEY_RIGHT     9
 #define KEY_BOMB     18
 #define KEY_QUIT     16
+#define KEY_QUIT_K   0x3 // Ctrl+c
 
 #define DELAY        66666
 
@@ -73,6 +77,7 @@ struct bomb
     int ticks;
     int length;
     int current_length;
+    int max_length[4];
     int from_player;
 };
 
@@ -254,14 +259,15 @@ void draw_field(struct playfield * f, struct player * pl,
 
     for (i=0; i<num_bombs; i++)
     {
-        int fieldpos = (bomb[i].y * FIELD_WIDTH + bomb[i].x) * 3;
         if (bomb[i].ticks <= 0) {
             for (j=0; j<4; j++) {
                 int dx, dy;
                 int pos = get_newpos_from_i(bomb[i].x, bomb[i].y, &dx, &dy, j);
                 if (f[pos].type != FIELD_TYPE_HARDWALL)
                 {
-                    for (k=0; k<bomb[i].current_length; k++) {
+                    int count_to = bomb[i].current_length < bomb[i].max_length[j] ?
+                        bomb[i].current_length : bomb[i].max_length[j];
+                    for (k=0; k<count_to; k++) {
                         int nx = bomb[i].x + k * dx;
                         int ny = bomb[i].y + k * dy;
                         if (nx >= 0 && nx < FIELD_WIDTH &&
@@ -340,67 +346,38 @@ void populate_playfield(struct playfield * pf,
         }
     }
 
-    //if (FILL_RANDOMIZED) {
-        for (i=0; i<num_mons; i++){
-            while(1){
-                int pos;
-                x=rand() % FIELD_WIDTH;
-                y=rand() % FIELD_HEIGHT;
-                pos = (y * FIELD_WIDTH + x);
-                if(pf[pos].type == FIELD_TYPE_HARDWALL ||
-                   pos == 0 || pos == 1 || pos == FIELD_WIDTH || pos == FIELD_WIDTH+1 ||
-                   pos == FIELD_WIDTH-1 || pos == FIELD_WIDTH-2 ||
-                   pos == FIELD_WIDTH*2-1 || pos == FIELD_WIDTH*2-2 ||
-                   pos == (FIELD_HEIGHT-1)*FIELD_WIDTH ||
-                   pos == (FIELD_HEIGHT-1)*FIELD_WIDTH+1 ||
-                   pos == (FIELD_HEIGHT-2)*FIELD_WIDTH ||
-                   pos == (FIELD_HEIGHT-2)*FIELD_WIDTH+1 ||
-                   pos == FIELD_HEIGHT*FIELD_WIDTH-1 ||
-                   pos == FIELD_HEIGHT*FIELD_WIDTH-2 ||
-                   pos == FIELD_HEIGHT*FIELD_WIDTH-3 ||
-                   pos == FIELD_HEIGHT*(FIELD_WIDTH-1)-1 ||
-                   pos == FIELD_HEIGHT*(FIELD_WIDTH-1)-2 ||
-                   pos == FIELD_HEIGHT*(FIELD_WIDTH-1)-3) {
-                    continue;
-                } else {
-                    mons[i].x = x;
-                    mons[i].y = y;
-                    mons[i].speed = MONSTER_SPEED;
-                    mons[i].alive = 1;
-                    pf[pos].type = FIELD_TYPE_EMPTY;
-                    break;
-                }
+    for (i=0; i<num_mons; i++){
+        while(1){
+            int pos;
+            x=rand() % FIELD_WIDTH;
+            y=rand() % FIELD_HEIGHT;
+            pos = (y * FIELD_WIDTH + x);
+            if(pf[pos].type == FIELD_TYPE_HARDWALL ||
+               pos == 0 || pos == 1 || pos == FIELD_WIDTH || pos == FIELD_WIDTH+1 ||
+               pos == FIELD_WIDTH-1 || pos == FIELD_WIDTH-2 ||
+               pos == FIELD_WIDTH*2-1 || pos == FIELD_WIDTH*2-2 ||
+               pos == (FIELD_HEIGHT-1)*FIELD_WIDTH ||
+               pos == (FIELD_HEIGHT-1)*FIELD_WIDTH+1 ||
+               pos == (FIELD_HEIGHT-2)*FIELD_WIDTH ||
+               pos == (FIELD_HEIGHT-2)*FIELD_WIDTH+1 ||
+               pos == FIELD_HEIGHT*FIELD_WIDTH-1 ||
+               pos == FIELD_HEIGHT*FIELD_WIDTH-2 ||
+               pos == FIELD_HEIGHT*FIELD_WIDTH-3 ||
+               pos == FIELD_HEIGHT*(FIELD_WIDTH-1)-1 ||
+               pos == FIELD_HEIGHT*(FIELD_WIDTH-1)-2 ||
+               pos == FIELD_HEIGHT*(FIELD_WIDTH-1)-3) {
+                continue;
+            } else {
+                mons[i].x = x;
+                mons[i].y = y;
+                mons[i].speed = MONSTER_SPEED;
+                mons[i].alive = 1;
+                pf[pos].type = FIELD_TYPE_EMPTY;
+                break;
             }
         }
-        //}
-}
-
-/*
-char read_command()
-{
-    fd_set readfds;
-    struct timeval tv;
-    int retval = 0;
-    char cmd_buf[1024];
-
-    FD_ZERO(&readfds);
-    FD_SET(0, &readfds);
-    tv.tv_sec = 0;
-    tv.tv_usec = DELAY;
-        
-    retval = select(STDIN_FILENO+1, &readfds, NULL, NULL, &tv);
-    if (retval > 0) {
-        int num_read = read(STDIN_FILENO, cmd_buf, 255);
-        if (num_read > 0) {
-            return(cmd_buf[0]);
-        } else {
-            return 0;
-        }
-    } else {
-        return 0;
     }
 }
-*/
 
 int is_bomb(int x, int y, struct bomb * bm, int n_bombs)
 {
@@ -433,11 +410,16 @@ int main(int argc, char * argv[])
     int n_bombs = 0;
     int n_monsters = MONSTERS;
     int mx[4], my[4];
+    int last_ctype = 0;
+    int p = 0;
     int i, j, k, l;
 
-    ch = open_controller(CONTROLLER_TYPE_JOYSTICK);
-    if (!ch)
+    ch = open_controller(CONTROLLER_TYPE_JOYSTICK |
+                         CONTROLLER_TYPE_STDIN);
+    if (!ch) {
+        fprintf(stderr, "No joysticks/controllers found.\n");
         return -1;
+    }
 
     srand(time(NULL));
 
@@ -469,150 +451,101 @@ int main(int argc, char * argv[])
 
     populate_playfield(field, mons, n_monsters);
 
-    //system ("/bin/stty -echo raw");
-
     gettimeofday(&tv, NULL);
 
     while(1) {
-        int p;
         cmd = read_command(ch, DELAY);
 
-        if (cmd.controller >= PLAYERS ||
-            cmd.type != 2)
+        if (cmd.controller >= PLAYERS)
             continue;
 
-        //fprintf(stderr, "Num: %d\n", cmd.number);
+        if (cmd.controller >= 0)
+            p = cmd.controller;
 
-        p = cmd.controller;
-
-        if (cmd.number == KEY_QUIT)
+        if ((cmd.type == 2 && cmd.number == KEY_QUIT) ||
+            (cmd.type == IN_TYPE_STDIN && cmd.number == KEY_QUIT_K))
             goto exit;
-/*
-        switch (cmd.number) {
-        case KEY_UP_P1:
-        case KEY_DOWN_P1:
-        case KEY_LEFT_P1:
-        case KEY_RIGHT_P1:
-        case KEY_BOMB_P1:
-            p = 0;
-            break;
-        case KEY_UP_P2:
-        case KEY_DOWN_P2:
-        case KEY_LEFT_P2:
-        case KEY_RIGHT_P2:
-        case KEY_BOMB_P2:
-            p = 1;
-            break;
-        case KEY_QUIT:
-            goto exit;
-        default:
-            break;
-        }
-*/
 
-        switch (cmd.number) {
-        case KEY_UP:
-            if (cmd.value > 0) {
-                mx[p] = 0;
-                my[p] = -1;
-            } else {
-                mx[p] = 0;
-                my[p] = 0;
-                pl[p].last_move = 0;
-            }
-            break;
-        case KEY_DOWN:
-            if (cmd.value > 0) {
-                mx[p] = 0;
-                my[p] = 1;
-            } else {
-                mx[p] = 0;
-                my[p] = 0;
-                pl[p].last_move = 0;
-            }
-            break;
-        case KEY_LEFT:
-            if (cmd.value > 0) {
-                mx[p] = -1;
-                my[p] = 0;
-            } else {
-                mx[p] = 0;
-                my[p] = 0;
-                pl[p].last_move = 0;
-            }
-            break;
-        case KEY_RIGHT:
-            if (cmd.value > 0) {
-                mx[p] = 1;
-                my[p] = 0;
-            } else {
-                mx[p] = 0;
-                my[p] = 0;
-                pl[p].last_move = 0;
-            }
-            break;
-        case KEY_BOMB:
-            if (pl[p].alive && pl[p].cur_bombs < pl[p].max_bombs &&
-                !is_bomb(pl[p].x, pl[p].y, bm, n_bombs)) {
-                bm[n_bombs].x = pl[p].x;
-                bm[n_bombs].y = pl[p].y;
-                bm[n_bombs].ticks = DEFAULT_BOMB_TICKS;
-                bm[n_bombs].length = pl[p].fire;
-                bm[n_bombs].current_length = 0;
-                bm[n_bombs].from_player = p;
-                pl[p].cur_bombs++;
-                n_bombs++;
-            }
-            break;
-        default:
-            break;     
-        }
+        if (cmd.type > 0)
+            last_ctype = cmd.type;
 
-        for (i=0; i<n_bombs; i++)
-        {
-            int fieldpos = (bm[i].y * FIELD_WIDTH + bm[i].x) * 3;
-            if (bm[i].ticks == 0 &&
-                bm[i].current_length == bm[i].length) {
-                for (j=0; j<4; j++) {
-                    int dx, dy;
-                    int pos = get_newpos_from_i(bm[i].x, bm[i].y, &dx, &dy, j);
-                    if (field[pos].type != FIELD_TYPE_HARDWALL)
-                    {
-                        for (k=0; k<bm[i].current_length; k++) {
-                            int nx = bm[i].x + k * dx;
-                            int ny = bm[i].y + k * dy;
-                            if (nx >= 0 && nx < FIELD_WIDTH &&
-                                ny >= 0 && ny < FIELD_HEIGHT) {
-                                int npos = ny * FIELD_WIDTH + nx;
-                                for (l=0; l<PLAYERS; l++) {
-                                    if (pl[l].x == nx && pl[l].y == ny) {
-                                        pl[l].alive = 0;
-                                    }
-                                }
-                                for (l=0; l<n_monsters; l++) {
-                                    if (mons[l].x == nx && mons[l].y == ny) {
-                                        mons[l].alive = 0;
-                                    }
-                                }
-                                field[npos].type = FIELD_TYPE_EMPTY;
-                            }
-                        }
-                    }
+        if (cmd.controller >= 0) {
+            switch (cmd.number) {
+            case KEY_UP_K1:
+            case KEY_UP_K2:
+            case KEY_UP:
+                if (cmd.value > 0) {
+                    mx[p] = 0;
+                    my[p] = -1;
+                } else {
+                    mx[p] = 0;
+                    my[p] = 0;
+                    pl[p].last_move = 0;
                 }
-            }
-        }
-        for (i=0; i<n_bombs; i++) {
-            if (bm[i].current_length == bm[i].length) {
-                pl[bm[i].from_player].cur_bombs--;
-                n_bombs--;
-                for (j=i; j<n_bombs; j++) {
-                    bm[j] = bm[j+1];
+                break;
+            case KEY_DOWN_K1:
+            case KEY_DOWN_K2:
+            case KEY_DOWN:
+                if (cmd.value > 0) {
+                    mx[p] = 0;
+                    my[p] = 1;
+                } else {
+                    mx[p] = 0;
+                    my[p] = 0;
+                    pl[p].last_move = 0;
                 }
+                break;
+            case KEY_LEFT_K1:
+            case KEY_LEFT_K2:
+            case KEY_LEFT:
+                if (cmd.value > 0) {
+                    mx[p] = -1;
+                    my[p] = 0;
+                } else {
+                    mx[p] = 0;
+                    my[p] = 0;
+                    pl[p].last_move = 0;
+                }
+                break;
+            case KEY_RIGHT_K1:
+            case KEY_RIGHT_K2:
+            case KEY_RIGHT:
+                if (cmd.value > 0) {
+                    mx[p] = 1;
+                    my[p] = 0;
+                } else {
+                    mx[p] = 0;
+                    my[p] = 0;
+                    pl[p].last_move = 0;
+                }
+                break;
+            case KEY_BOMB_K1:
+            case KEY_BOMB_K2:
+            case KEY_BOMB:
+                if (pl[p].alive && pl[p].cur_bombs < pl[p].max_bombs &&
+                    !is_bomb(pl[p].x, pl[p].y, bm, n_bombs)) {
+                    bm[n_bombs].x = pl[p].x;
+                    bm[n_bombs].y = pl[p].y;
+                    bm[n_bombs].ticks = DEFAULT_BOMB_TICKS;
+                    bm[n_bombs].length = pl[p].fire;
+                    bm[n_bombs].max_length[0] = bm[n_bombs].length;
+                    bm[n_bombs].max_length[1] = bm[n_bombs].length;
+                    bm[n_bombs].max_length[2] = bm[n_bombs].length;
+                    bm[n_bombs].max_length[3] = bm[n_bombs].length;
+                    bm[n_bombs].current_length = 0;
+                    bm[n_bombs].from_player = p;
+                    pl[p].cur_bombs++;
+                    n_bombs++;
+                }
+                break;
+            default:
+                break;     
             }
         }
 
         gettimeofday(&tv2, NULL);
         timeval_subtract(&tv_res, &tv2, &tv);
+
         if (tv_res.tv_usec > DELAY) {
 
             for (i=0; i<n_monsters; i++) {
@@ -657,22 +590,94 @@ int main(int argc, char * argv[])
                                 }
                                 field[npos].special = FIELD_SPECIAL_NONE;
                             }
+
                             pl[i].x = nx;
                             pl[i].y = ny;
                         }
                     }
-                    pl[i].last_move = frame;
+                    if (mx[i] != 0 || my[i] != 0) {
+                        pl[i].last_move = frame;
+                    }
+                }
+            }
+
+            for (i=0; i<n_bombs; i++) {
+                if (bm[i].current_length == bm[i].length) {
+                    pl[bm[i].from_player].cur_bombs--;
+                    n_bombs--;
+                    for (j=i; j<n_bombs; j++) {
+                        bm[j] = bm[j+1];
+                    }
                 }
             }
 
             for (i=0; i<n_bombs; i++)
             {
                 if (bm[i].ticks == 0) {
-                    if (bm[i].current_length < bm[i].length)
+                    if (bm[i].current_length < bm[i].length) {
                         bm[i].current_length++;
+                    }
                 } else {
-                    if (frame % 3 == 0)
+                    if (frame % 3 == 0) {
                         bm[i].ticks--;
+                        if (RUMBLE && bm[i].ticks == 0) {
+                            for (j=0; j<PLAYERS; j++) {
+                                double power;
+                                double dist = sqrt(pow((bm[i].x - pl[j].x), 2) +
+                                                   pow((bm[i].y - pl[j].y), 2));
+                                power = dist / MAX_DISTANCE;
+                                if (power > 0.2) {
+                                    joyrumble(j+1, 100, 100, 500);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (bm[i].ticks == 0)
+                {
+                    for (j=0; j<4; j++) {
+                        int dx, dy;
+                        int pos = get_newpos_from_i(bm[i].x, bm[i].y, &dx, &dy, j);
+                        if (field[pos].type != FIELD_TYPE_HARDWALL) {
+                            for (k=0; k<bm[i].current_length; k++) {
+                                int nx = bm[i].x + k * dx;
+                                int ny = bm[i].y + k * dy;
+                                if (nx >= 0 && nx < FIELD_WIDTH &&
+                                    ny >= 0 && ny < FIELD_HEIGHT) {
+                                    int npos = ny * FIELD_WIDTH + nx;
+
+                                    if (k >= bm[i].max_length[j])
+                                        break;
+
+                                    if (field[npos].type == FIELD_TYPE_WALL) {
+                                        field[npos].type = FIELD_TYPE_EMPTY;
+                                        bm[i].max_length[j] = k + 1;
+                                    }
+
+                                    for (l=0; l<PLAYERS; l++) {
+                                        if (pl[l].x == nx && pl[l].y == ny) {
+                                            pl[l].alive = 0;
+                                        }
+                                    }
+                                    for (l=0; l<n_monsters; l++) {
+                                        if (mons[l].x == nx && mons[l].y == ny) {
+                                            mons[l].alive = 0;
+                                        }
+                                    }
+                                    for (l=0; l<n_bombs; l++)
+                                    {
+                                        if (bm[l].x == nx && bm[l].y == ny &&
+                                            bm[l].ticks > 1) {
+                                            bm[l].ticks = 1;
+                                        }
+                                    }
+
+                                    field[npos].type = FIELD_TYPE_EMPTY;
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -690,16 +695,19 @@ int main(int argc, char * argv[])
             draw_field(field, pl, bm, n_bombs, mons, n_monsters);
             frame++;
             gettimeofday(&tv, NULL);
-        }
 
+            if (last_ctype == IN_TYPE_STDIN) {
+                mx[p] = 0;
+                my[p] = 0;
+                pl[p].last_move = 0;
+            }
+            last_ctype = 0;
+        }
     }
 
 exit:
     free(field);
     close_controller(ch);
-
-    //printf("\n\r");
-    //system ("/bin/stty echo cooked");
 
     return 0;
 }

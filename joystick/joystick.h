@@ -2,11 +2,14 @@
 
 #define CONTROLLER_TYPE_NONE     0
 #define CONTROLLER_TYPE_JOYSTICK 1
+#define CONTROLLER_TYPE_STDIN    2
 
 #define MAX_JOYSTICKS            16
 
 #define JOYSTICK_DEVICES_DIR     "/dev/input"
 #define JOYSTICK_DEVICES_FILTER  "js"
+
+#define IN_TYPE_STDIN            8
 
 struct controller_handle;
 
@@ -28,7 +31,7 @@ struct controller_handle * open_controller(int types);
  */
 void close_controller(struct controller_handle * handle);
 
-/** Blocks until a command arrived or max_dely (in ms)
+/** Blocks until a command arrived or max_dely (in micro seconds)
  *  has elapsed. Returned struct command which contains
  *  information about the event. */
 struct command read_command(struct controller_handle * handle,

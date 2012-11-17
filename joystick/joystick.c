@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -11,6 +12,7 @@ struct controller_handle
 {
     int n_joysticks;
     int joystick_fd[MAX_JOYSTICKS];
+    int stdin_fd;
     int max_fd;
 };
 
@@ -33,6 +35,7 @@ struct controller_handle * open_controller(int types)
 
     handle->n_joysticks = 0;
     handle->max_fd = 0;
+    handle->stdin_fd = -1;
 
     if (types & CONTROLLER_TYPE_JOYSTICK) {
         d = opendir(JOYSTICK_DEVICES_DIR);
@@ -56,7 +59,16 @@ struct controller_handle * open_controller(int types)
         }
     }
 
-    if (!handle->n_joysticks) {
+    if (types & CONTROLLER_TYPE_STDIN) {
+        system ("/bin/stty -echo raw");
+
+        handle->stdin_fd = STDIN_FILENO;
+        if (STDIN_FILENO > handle->max_fd) {
+            handle->max_fd = STDIN_FILENO;
+        }
+    }
+
+    if (!handle->n_joysticks && handle->stdin_fd == -1) {
         free(handle);
         handle = NULL;
     }
@@ -76,15 +88,20 @@ struct command read_command(struct controller_handle * handle,
     struct command c;
 
     c.controller = -1;
+    c.type = 0;
     c.number = 0;
+    c.value = 0;
 
     FD_ZERO(&readfds);
     for (i=0; i<handle->n_joysticks; i++) {
         FD_SET(handle->joystick_fd[i], &readfds);
     }
+    if (handle->stdin_fd >= 0) {
+        FD_SET(handle->stdin_fd, &readfds);
+    }
     if (max_delay > 0) {
-        tv.tv_sec = max_delay / 1000;
-        tv.tv_usec = (max_delay % 1000) * 1000;
+        tv.tv_sec = max_delay / 1000000;
+        tv.tv_usec = max_delay % 1000000;
         tv_p = &tv;
     } else {
         tv_p = NULL;
@@ -104,6 +121,15 @@ struct command read_command(struct controller_handle * handle,
                 }
             }
         }
+        if (handle->stdin_fd >= 0 && c.controller == -1 &&
+            FD_ISSET(handle->stdin_fd, &readfds)) {
+            unsigned char key;
+            read(handle->stdin_fd, &key, 1);
+            c.controller = handle->n_joysticks;
+            c.number = key;
+            c.type = IN_TYPE_STDIN;
+            c.value = 1;
+        }
     }
 
     return c;
@@ -112,6 +138,12 @@ struct command read_command(struct controller_handle * handle,
 void close_controller(struct controller_handle * handle)
 {
     int i;
+
+    if (handle->stdin_fd >= 0) {
+        printf("\n\r");
+        system ("/bin/stty echo cooked");
+    }
+
     for (i=0; i<handle->n_joysticks; i++) {
         close(handle->joystick_fd[i]);
     }
