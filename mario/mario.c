@@ -4,6 +4,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <SDL/SDL.h>
+#include "joystick.h"
+
 
 #define SCREEN_WIDTH        24
 #define SCREEN_HEIGHT       24
@@ -34,7 +36,12 @@
 //100-149	Spezial Stones
 //150-199	Change to Level Stones
 
-
+#define KEY_UP        8
+#define KEY_DOWN     10
+#define KEY_LEFT     11
+#define KEY_RIGHT     9
+#define KEY_BOMB     18
+#define KEY_QUIT     16
 
 struct s_player
 {
@@ -104,7 +111,7 @@ uint8_t check_mario_under_wall(struct s_level * level, struct s_player * player)
 	}
 }
 
-
+/*
 char read_command()
 {
 
@@ -132,17 +139,21 @@ char read_command()
     }
 
 }
+*/
 
-void parse_keys(struct s_level * level, struct s_player * player){
+void parse_keys(struct controller_handle * ch, struct s_level * level,
+                struct s_player * player){
 
 
 	int input;
+    struct command cmd;
+
 	//fprintf(stderr, "start read command: %d\n",SDL_GetTicks());
-	input = read_command();
+	cmd = read_command(ch, 0);
 	//fprintf(stderr, "end   read command: %d\n\n",SDL_GetTicks());
-	
-	switch(input) {
-		case 'w':
+
+	switch(cmd.number) {
+		case KEY_UP:
 			if(player[0].y > 0){
 				if (check_mario_stand_wall(level,player)){
 					player[0].jumping=5;
@@ -155,12 +166,12 @@ void parse_keys(struct s_level * level, struct s_player * player){
 			}
 			break;
 */
-		case 'a':
+		case KEY_LEFT:
 			if(player[0].x > 0){
 				player[0].next_x_dir=-1;
 			}
 			break;
-		case 'd':
+		case KEY_RIGHT:
 			if(player[0].x < MAX_LEVEL_WIDTH-1){
 				player[0].next_x_dir=1;
 			}
@@ -177,7 +188,7 @@ void clean_level(struct s_level * level){
 
 	uint8_t i;
 	int x, y;
-	for (i=0;i<=4;i++){
+	for (i=0;i<4;i++){
 		for (y=0; y<MAX_LEVEL_HEIGHT; y++){
 			for (x=0; x<MAX_LEVEL_WIDTH; x++){
 				level[i].data[x][y]=0;
@@ -390,9 +401,12 @@ int main(int argc, char * argv[]){
 	struct s_player * player = malloc(sizeof(struct s_player));
 	struct s_level * level = malloc(sizeof(struct s_level)*4);
 	//struct s_level * level = malloc(MAX_LEVEL_WIDTH * MAX_LEVEL_HEIGHT + (sizeof(int) * 2) * 4);
+    struct controller_handle * ch;
 	
 	uint32_t framenow, next_parse_keys_time = 0 , next_calc_gravity_time = 0, next_draw_screen_time = 0, next_calc_move_time = 0;
-	
+
+    ch = open_controller(CONTROLLER_TYPE_JOYSTICK);
+
 	load_level(level, 1);
 	//draw_screen(level, player);
 
@@ -401,12 +415,13 @@ int main(int argc, char * argv[]){
 	player[0].x=12;
 	player[0].y=12;
 	player[0].gravity_y=1;
+
 	while(1){
 		framenow=read_frame();
 
 		if ( framenow >= next_parse_keys_time + PARSE_KEYS_EVERY){
 			next_parse_keys_time=next_parse_keys_time+PARSE_KEYS_EVERY;
-			parse_keys(level, player);
+			parse_keys(ch, level, player);
 		}
 		
 		if ( framenow >= next_draw_screen_time + DRAW_SCREEN_EVERY){
@@ -430,6 +445,9 @@ int main(int argc, char * argv[]){
 		//usleep(100);
 
 	}
+
+    close_controller(ch);
+
 	return 0;
 
 }
