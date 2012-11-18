@@ -186,18 +186,18 @@ void draw_field(struct playfield * f, struct player * pl,
             switch (f[pos].type) {
             case FIELD_TYPE_EMPTY:
                 field[fieldpos+0] = 0;
-                field[fieldpos+1] = 89;
-                field[fieldpos+2] = 146;
+                field[fieldpos+1] = 0;
+                field[fieldpos+2] = 0;
                 break;
             case FIELD_TYPE_HARDWALL:
-                field[fieldpos+0] = 113;
-                field[fieldpos+1] = 113;
-                field[fieldpos+2] = 113;
+                field[fieldpos+0] = 255;
+                field[fieldpos+1] = 255;
+                field[fieldpos+2] = 255;
                 break;
             case FIELD_TYPE_WALL:
-                field[fieldpos+0] = 76;
-                field[fieldpos+1] = 76;
-                field[fieldpos+2] = 76;
+                field[fieldpos+0] = 92;
+                field[fieldpos+1] = 35;
+                field[fieldpos+2] = 0;
                 break;
             default:
                 break;
@@ -254,6 +254,8 @@ void draw_field(struct playfield * f, struct player * pl,
         }
     }
 
+    // Player colors
+
     if (pl[0].alive) {
         playerpos = (pl[0].y * FIELD_WIDTH + pl[0].x) * 3;
         field[playerpos+0] = 0;
@@ -262,9 +264,9 @@ void draw_field(struct playfield * f, struct player * pl,
     }
     if (pl[1].alive) {
         playerpos = (pl[1].y * FIELD_WIDTH + pl[1].x) * 3;
-        field[playerpos+0] = 203;
-        field[playerpos+1] = 203;
-        field[playerpos+2] = 203;
+        field[playerpos+0] = 70;
+        field[playerpos+1] = 255;
+        field[playerpos+2] = 70;
     }
     if (pl[2].alive) {
         playerpos = (pl[2].y * FIELD_WIDTH + pl[2].x) * 3;
@@ -286,7 +288,7 @@ void draw_field(struct playfield * f, struct player * pl,
         int fieldpos = (mons[i].y * FIELD_WIDTH + mons[i].x) * 3;
         if (mons[i].alive) {
             field[fieldpos+0] = 213;
-            field[fieldpos+1] = 190;
+            field[fieldpos+1] = 60;
             field[fieldpos+2] = 139;
         }
     }
@@ -494,7 +496,8 @@ int main(int argc, char * argv[])
     while(1) {
         cmd = read_command(ch, DELAY);
 
-        if (cmd.controller >= PLAYERS)
+        if (cmd.controller >= PLAYERS ||
+            cmd.type != 2)
             continue;
 
         if (cmd.controller >= 0)
