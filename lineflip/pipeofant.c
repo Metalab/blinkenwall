@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <linux/types.h>
 #include <linux/spi/spidev.h>
+#include <bcm2835.h>
  
 #define SPI_DEVICE   "/dev/spidev0.0"
 #define WIDTH         32
@@ -16,6 +17,7 @@
 #define BLINK_BIT_POS 10
 #define MAX_BUF_SIZE  WIDTH * HEIGHT * 4
 #define OUTBUF_SIZE   40
+#define PIN_DISPLAY_ENABLE RPI_GPIO_P1_22
  
 int main(int argc, char *argv[])
 {
@@ -32,6 +34,9 @@ int main(int argc, char *argv[])
     uint8_t mode = 0;
     uint8_t bits = 8;
     uint32_t speed = 100000;
+
+    bcm2835_init();
+    bcm2835_gpio_fsel(PIN_DISPLAY_ENABLE, BCM2835_GPIO_FSEL_OUTP);
  
 /** Usage: give number of bytes per color as command line argument
  *  Example: 'pipeofant 3' for RGB input
@@ -81,7 +86,7 @@ int main(int argc, char *argv[])
         memset(outbuf, 0, OUTBUF_SIZE);
         outpos = 0;
  
-        for (x=WIDTH-1; x>0; x--) {
+        for (x=WIDTH-1; x>=0; x--) {
             for (y=HEIGHT-1; y>=0; y--) {
                 int on = 0;
                 inpos = (y * WIDTH + x) * bpp;
@@ -97,8 +102,9 @@ int main(int argc, char *argv[])
 
             }
         }
- 
+        bcm2835_gpio_write(PIN_DISPLAY_ENABLE, LOW);
         write(fd, outbuf, OUTBUF_SIZE);
+        bcm2835_gpio_write(PIN_DISPLAY_ENABLE, HIGH);
     }
  
     close(fd);
