@@ -1,3 +1,6 @@
+#ifndef JOYSTICK_H
+#define JOYSTICK_H
+
 #include <stdint.h>
 
 #define CONTROLLER_TYPE_NONE     0
@@ -36,3 +39,6 @@ void close_controller(struct controller_handle * handle);
  *  information about the event. */
 struct command read_command(struct controller_handle * handle,
                             int max_delay);
+
+#endif
+
