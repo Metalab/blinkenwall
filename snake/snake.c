@@ -5,7 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <sys/time.h>
 #include <unistd.h>
+#include "joystick.h"
 
 //#define USE_WEBSOCKETS 1
 
@@ -13,12 +15,12 @@
 #include "../libwbl/libwbl.h"
 #endif
 
-#define WALL_WIDTH  9
-#define WALL_HEIGHT 5
+#define WALL_WIDTH  32
+#define WALL_HEIGHT 9
 #define WALL_SIZE WALL_WIDTH * WALL_HEIGHT
 
-#define FRAME_DELAY 300000
-
+#define FRAME_DELAY 200000
+/*
 #ifdef USE_WEBSOCKETS
 #define KEY_UP    BW_CMD_UP_PRESSED
 #define KEY_DOWN  BW_CMD_DOWN_PRESSED
@@ -30,11 +32,44 @@
 #define KEY_LEFT  'a'
 #define KEY_RIGHT 'd'
 #endif
+*/
+
+#define KEY_UP        8
+#define KEY_DOWN     10
+#define KEY_LEFT     11
+#define KEY_RIGHT     9
+#define KEY_BOMB     18
+#define KEY_QUIT     16
 
 typedef struct coord {
     int x;
     int y;
 } coord_t;
+
+int
+timeval_subtract (result, x, y)
+    struct timeval *result, *x, *y;
+{
+    /* Perform the carry for the later subtraction by updating y. */
+    if (x->tv_usec < y->tv_usec) {
+        int nsec = (y->tv_usec - x->tv_usec) / 1000000 + 1;
+        y->tv_usec -= 1000000 * nsec;
+        y->tv_sec += nsec;
+    }
+    if (x->tv_usec - y->tv_usec > 1000000) {
+        int nsec = (x->tv_usec - y->tv_usec) / 1000000;
+        y->tv_usec += 1000000 * nsec;
+        y->tv_sec -= nsec;
+    }
+
+    /* Compute the time remaining to wait.
+       tv_usec is certainly positive. */
+    result->tv_sec = x->tv_sec - y->tv_sec;
+    result->tv_usec = x->tv_usec - y->tv_usec;
+
+    /* Return 1 if result is negative. */
+    return x->tv_sec < y->tv_sec;
+}
 
 struct coord new_food(struct coord * snake, int snake_length) {
     struct coord food;
@@ -92,6 +127,7 @@ void send_field(struct coord * snake, int snake_length,
     fflush(stdout);
 }
 
+/*
 char read_command()
 {
     fd_set readfds;
@@ -117,11 +153,18 @@ char read_command()
         return 0;
     }
 }
+*/
 
 int main(int argc, char * argv[]) {
     struct coord snake[WALL_SIZE];
     struct coord dir;
     struct coord food;
+    struct controller_handle * ch;
+    struct command cmd;
+    struct timeval tv;
+    struct timeval tv2;
+    struct timeval tv_res;
+ 
     int i;
     int snake_length;
 
@@ -147,10 +190,16 @@ int main(int argc, char * argv[]) {
 
     food = new_food(snake, snake_length);
 
-    while(1) {
-        int input;
+    ch = open_controller(CONTROLLER_TYPE_JOYSTICK);
+    if (!ch) {
+        fprintf(stderr, "No joysticks/controllers found.\n");
+        return -1;
+    }
 
-        usleep(FRAME_DELAY);
+    gettimeofday(&tv, NULL);
+
+    while(1) {
+      //int input;
 
 #ifdef USE_WEBSOCKETS
         while(1) {
@@ -168,37 +217,45 @@ int main(int argc, char * argv[]) {
             goto exit;
         }
 #else
-        input = read_command();
+        cmd = read_command(ch, FRAME_DELAY);
 #endif
 
-        switch(input) {
-        case KEY_UP:
-            if (dir.y != 1) {
+	if (cmd.value > 0) {
+	    switch(cmd.number) {
+	    case KEY_UP:
+	      if (dir.y != 1) {
                 dir.x = 0;
                 dir.y = -1;
-            }
-            break;
-        case KEY_DOWN:
-            if (dir.y != -1) {
+	      }
+	      break;
+	    case KEY_DOWN:
+	      if (dir.y != -1) {
                 dir.x = 0;
                 dir.y = 1;
-            }
-            break;
-        case KEY_LEFT:
-            if (dir.x != 1) {
+	      }
+	      break;
+	    case KEY_LEFT:
+	      if (dir.x != 1) {
                 dir.x = -1;
                 dir.y = 0;
-            }
-            break;
-        case KEY_RIGHT:
-            if (dir.x != -1) {
+	      }
+	      break;
+	    case KEY_RIGHT:
+	      if (dir.x != -1) {
                 dir.x = 1;
                 dir.y = 0;
-            }
-            break;
-        default:
-            break;
-        }
+	      }
+	      break;
+	    default:
+	      break;
+	    }
+	}
+
+        gettimeofday(&tv2, NULL);
+        timeval_subtract(&tv_res, &tv2, &tv);
+
+	if (tv_res.tv_usec < FRAME_DELAY)
+	  continue;
 
         if (snake[0].x == food.x &&
             snake[0].y == food.y) {
@@ -228,12 +285,15 @@ int main(int argc, char * argv[]) {
 
         send_field(snake, snake_length, food);
         paint_field(snake, snake_length, food);
+
+	gettimeofday(&tv, NULL);
     }
 
 exit:
 #ifdef USE_WEBSOCKETS
     bw_socket_close(sc);
 #else
+    close_controller(ch);
     system ("/bin/stty echo cooked");
 #endif
     return 0;

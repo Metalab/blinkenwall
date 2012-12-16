@@ -1,4 +1,4 @@
 #!/bin/bash
 
-gcc -o master master.c
+gcc -I../joystick -o master master.c ../joystick/joystick.c
 #master.c

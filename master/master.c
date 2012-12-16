@@ -5,14 +5,20 @@
 #include <time.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include "joystick.h"
 #include "./font.c"
-
 
 #define SCREEN_WIDTH  24
 #define SCREEN_HEIGHT 24
 #define COLOUR 0
-#define X_SLEEPTIME_BETWEEN 100
+#define X_SLEEPTIME_BETWEEN 100000
 
+#define KEY_UP        8
+#define KEY_DOWN     10
+#define KEY_LEFT     11
+#define KEY_RIGHT     9
+#define KEY_BOMB     18
+#define KEY_QUIT     16
 
 struct s_folder
 {
@@ -32,6 +38,31 @@ struct s_MoveData
 	//Mit dieser Variable wird auf den aktuellen buchstaben gezeigt der gerade angezeigt wird
 	uint8_t TextPos;
 };
+
+int
+timeval_subtract (result, x, y)
+    struct timeval *result, *x, *y;
+{
+    /* Perform the carry for the later subtraction by updating y. */
+    if (x->tv_usec < y->tv_usec) {
+        int nsec = (y->tv_usec - x->tv_usec) / 1000000 + 1;
+        y->tv_usec -= 1000000 * nsec;
+        y->tv_sec += nsec;
+    }
+    if (x->tv_usec - y->tv_usec > 1000000) {
+        int nsec = (x->tv_usec - y->tv_usec) / 1000000;
+        y->tv_usec += 1000000 * nsec;
+        y->tv_sec -= nsec;
+    }
+
+    /* Compute the time remaining to wait.
+       tv_usec is certainly positive. */
+    result->tv_sec = x->tv_sec - y->tv_sec;
+    result->tv_usec = x->tv_usec - y->tv_usec;
+
+    /* Return 1 if result is negative. */
+    return x->tv_sec < y->tv_sec;
+}
 
 
 void msleep (unsigned int ms) {
@@ -167,7 +198,7 @@ void myreaddir(struct s_folder * folder, int foldernumber){
 
 }
 
-
+/*
 char read_command()
 {
     fd_set readfds;
@@ -193,8 +224,7 @@ char read_command()
         return 0;
     }
 }
-
-
+*/
 
 int main(int argc, char * argv[]) {
 
@@ -204,6 +234,13 @@ int main(int argc, char * argv[]) {
 
 	struct s_folder * folder = malloc(sizeof(struct s_folder)*8);
 	struct s_MoveData * MoveData = malloc(sizeof(struct s_MoveData));
+
+	struct timeval tv;
+	struct timeval tv2;
+	struct timeval tv_res;
+
+	struct controller_handle * ch;
+	struct command cmd;
 
 	uint8_t screenbuffer[SCREEN_HEIGHT][SCREEN_WIDTH][3];
 
@@ -217,8 +254,6 @@ memset(screenbuffer, 0, SCREEN_WIDTH * SCREEN_HEIGHT * 3);
 	MoveData[0].CharPosition = FONT_WIDTH+1;
         MoveData[0].AktuellerChar = 0;
 	MoveData[0].TextPos = 0;
-
-
 
 
 	//folder[0].path=strdup("/home/blinkentisch/programme");
@@ -237,60 +272,71 @@ memset(screenbuffer, 0, SCREEN_WIDTH * SCREEN_HEIGHT * 3);
 //	strcpy(TextString, folder[folder_deep].name[menu_pos]);
 //	strcat(TextString, " ");
 
+	ch = open_controller(CONTROLLER_TYPE_JOYSTICK);
+	if (!ch) {
+	  fprintf(stderr, "No joysticks/controllers found.\n");
+	  return -1;
+	}
+i=0;
+	gettimeofday(&tv, NULL);
 	while (1){
-	
-	        input = read_command();
-
-        	switch(input) {
-	        case 'w':
-			load_next_text=1;
-			menu_pos--;
-			if (menu_pos < 0) {
-				menu_pos=folder[folder_deep].file_count-1;
-			}
-	            break;
-	        case 's':
-                        load_next_text=1;
-                        menu_pos++;
-			if(menu_pos==folder[folder_deep].file_count){
-				menu_pos=0;
-			}
-	            break;
-                case 'd':
-			if(folder[folder_deep].type[menu_pos]==DT_DIR){
+	        cmd = read_command(ch, X_SLEEPTIME_BETWEEN);
+		if(cmd.controller == -1){
+		          fprintf(stderr, "No joysticks/controllers found. %d\n", i++);
+		//	exit(1);
+		}
+		if (cmd.value > 0){
+	        	switch(cmd.number) {
+		        case KEY_UP:
 				load_next_text=1;
-				WriteTextInScreen(screenbuffer, folder[folder_deep].name[menu_pos], 0);
-				folder_deep++;
-				strcpy(folder[folder_deep].path, folder[folder_deep-1].path);
-				strcat(folder[folder_deep].path, "/");
-				strcat(folder[folder_deep].path, folder[folder_deep-1].name[menu_pos]); 	
-				myreaddir(folder, folder_deep);
-				menu_pos=0;
-			}else{
-				//printf("No Folder");
-			}
-                    break;
-                case 'a':
-			if (folder_deep){
-				load_next_text=1;
-				folder_deep--;
-				if (!folder_deep){
-					WriteTextInScreen(screenbuffer, "Menu", 0);
-				}else{
-					WriteTextInScreen(screenbuffer, folder[folder_deep-1].name[menu_pos], 0);
+				menu_pos--;
+				if (menu_pos < 0) {
+					menu_pos=folder[folder_deep].file_count-1;
 				}
-                        	menu_pos=0;
-			}
-                    break;
-	        default:
-	            break;
+		            break;
+		        case KEY_DOWN:
+	                        load_next_text=1;
+	                        menu_pos++;
+				if(menu_pos==folder[folder_deep].file_count){
+					menu_pos=0;
+				}
+		            break;
+	                case KEY_RIGHT:
+				if(folder[folder_deep].type[menu_pos]==DT_DIR){
+					load_next_text=1;
+					WriteTextInScreen(screenbuffer, folder[folder_deep].name[menu_pos], 0);
+					folder_deep++;
+					strcpy(folder[folder_deep].path, folder[folder_deep-1].path);
+					strcat(folder[folder_deep].path, "/");
+					strcat(folder[folder_deep].path, folder[folder_deep-1].name[menu_pos]); 	
+					myreaddir(folder, folder_deep);
+					menu_pos=0;
+				}else{
+					//printf("No Folder");
+				}
+	                    break;
+	                case KEY_LEFT:
+				if (folder_deep){
+					load_next_text=1;
+					folder_deep--;
+					if (!folder_deep){
+						WriteTextInScreen(screenbuffer, "Menu", 0);
+					}else{
+						WriteTextInScreen(screenbuffer, folder[folder_deep-1].name[menu_pos], 0);
+					}
+	                        	menu_pos=0;
+				}
+	                    break;
+		        default:
+	            	    break;
+		    	}
         	}
 
+		gettimeofday(&tv2, NULL);
+		timeval_subtract(&tv_res, &tv2, &tv);
 		
-
-
-
-
+		if (tv_res.tv_usec < X_SLEEPTIME_BETWEEN)
+		  continue;
 
 		MoveData[0].AktuellerChar = TextString[MoveData[0].TextPos];
                 if (MoveData[0].AktuellerChar == 0 || load_next_text==1){
@@ -303,14 +349,11 @@ memset(screenbuffer, 0, SCREEN_WIDTH * SCREEN_HEIGHT * 3);
                 }
 		WrtiteCharOut(screenbuffer, MoveData, 17);
 
-                //DrawScreenbufferToStderr(screenbuffer);
-                DrawScreenbufferToStdout(screenbuffer);
+//                DrawScreenbufferToStderr(screenbuffer);
 
+                //DrawScreenbufferToStdout(screenbuffer);
 
-
-
-
-		msleep(X_SLEEPTIME_BETWEEN);
+		gettimeofday(&tv, NULL);
 
 	}
 }
