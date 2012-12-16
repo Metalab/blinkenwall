@@ -40,7 +40,7 @@ struct controller_handle * open_controller(int types)
     if (types & CONTROLLER_TYPE_JOYSTICK) {
         d = opendir(JOYSTICK_DEVICES_DIR);
         if (d) {
-            while (dp = readdir(d)) {
+            while ((dp = readdir(d))) {
                 if (!strncmp(dp->d_name, JOYSTICK_DEVICES_FILTER,
                              strlen(JOYSTICK_DEVICES_FILTER))) {
                     char path[1024];
