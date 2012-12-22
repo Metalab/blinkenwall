@@ -6,7 +6,7 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <dirent.h>
-#include "joystick.h"
+#include "input.h"
 
 struct controller_handle
 {

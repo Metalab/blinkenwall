@@ -1,5 +1,5 @@
-#ifndef JOYSTICK_H
-#define JOYSTICK_H
+#ifndef INPUT_H
+#define INPUT_H
 
 #include <stdint.h>
 
@@ -13,6 +13,27 @@
 #define JOYSTICK_DEVICES_FILTER  "js"
 
 #define IN_TYPE_STDIN            8
+
+#define KEY_UP_K1    'w'
+#define KEY_DOWN_K1  's'
+#define KEY_LEFT_K1  'a'
+#define KEY_RIGHT_K1 'd'
+#define KEY_B1_K1    'q'
+#define KEY_B2_K1    'e'
+#define KEY_UP_K2    'i'
+#define KEY_DOWN_K2  'k'
+#define KEY_LEFT_K2  'j'
+#define KEY_RIGHT_K2 'l'
+#define KEY_B1_K2    'u'
+#define KEY_B2_K2    'o'
+#define KEY_UP        8
+#define KEY_DOWN     10
+#define KEY_LEFT     11
+#define KEY_RIGHT     9
+#define KEY_B1       18
+#define KEY_B2       19  //TODO: Is this the right value?
+#define KEY_QUIT     16
+#define KEY_QUIT_K   0x3 // Ctrl+c
 
 struct controller_handle;
 

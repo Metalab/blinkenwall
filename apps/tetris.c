@@ -1,5 +1,7 @@
 // Printf & Websocket tetris
 
+//TODO: Play from left to right
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,18 +9,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <sys/time.h>
-#include "../libwbl/libwbl.h"
-
-#define WALL_WIDTH 5
-#define WALL_HEIGHT 9
-#define WALL_SIZE WALL_WIDTH * WALL_HEIGHT
-
-#define KEY_ROT_RIGHT 'e'
-#define KEY_ROT_LEFT  'q'
-#define KEY_LEFT      'a'
-#define KEY_RIGHT     'd'
-#define KEY_DOWN      's'
-#define KEY_QUIT      0x3 // Ctrl+c
+#include "common.h"
 
 #define MAX_STONE_SIZE 5
 
@@ -31,6 +22,10 @@ typedef struct stone {
     int x;
     int y;
 } stone_t;
+
+struct tetris_config {
+    int delay;
+};
 
 struct stone stones[NUM_STONES] =  { {
         { { {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0}, {0,   0,   0} },
@@ -90,36 +85,9 @@ struct stone stones[NUM_STONES] =  { {
         -2 // Position Y
     } };
 
-int
-timeval_subtract (result, x, y)
-    struct timeval *result, *x, *y;
-{
-    /* Perform the carry for the later subtraction by updating y. */
-    if (x->tv_usec < y->tv_usec) {
-        int nsec = (y->tv_usec - x->tv_usec) / 1000000 + 1;
-        y->tv_usec -= 1000000 * nsec;
-        y->tv_sec += nsec;
-    }
-    if (x->tv_usec - y->tv_usec > 1000000) {
-        int nsec = (x->tv_usec - y->tv_usec) / 1000000;
-        y->tv_usec += 1000000 * nsec;
-        y->tv_sec -= nsec;
-    }
-
-    /* Compute the time remaining to wait.
-       tv_usec is certainly positive. */
-    result->tv_sec = x->tv_sec - y->tv_sec;
-    result->tv_usec = x->tv_usec - y->tv_usec;
-
-    /* Return 1 if result is negative. */
-    return x->tv_sec < y->tv_sec;
-}
-
 struct stone rotate_stone(struct stone st) {
     struct stone new_st;
     int x, y;
-
-    memset(new_st.data, 0, MAX_STONE_SIZE * MAX_STONE_SIZE * 3);
 
     for (y=0; y<MAX_STONE_SIZE; ++y) {
         for (x=0; x<MAX_STONE_SIZE; ++x) {
@@ -134,19 +102,19 @@ struct stone rotate_stone(struct stone st) {
     return new_st;
 }
 
-void paint_field(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
+void paint_field(uint8_t playfield[WIDTH][HEIGHT][3],
                  struct stone * st) {
-    char field[WALL_WIDTH][WALL_HEIGHT];
+    char field[WIDTH][HEIGHT];
     int x, y;
 
-    memset(field, '.', WALL_SIZE);
-
-    for (y=0; y<WALL_HEIGHT; ++y) {
-        for (x=0; x<WALL_WIDTH; ++x) {
+    for (y=0; y<HEIGHT; ++y) {
+        for (x=0; x<WIDTH; ++x) {
             if(playfield[x][y][0] != 0 ||
                playfield[x][y][1] != 0 ||
                playfield[x][y][2] != 0){
                 field[x][y]='#';
+            } else {
+                field[x][y]='.';
             }
         }
     }
@@ -156,32 +124,30 @@ void paint_field(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
     	    if(st->data[x][y][0] > 0 ||
                st->data[x][y][1] > 0 ||
                st->data[x][y][2] > 0){
-                if (x+st->x >= 0 && x+st->x < WALL_WIDTH &&
-                    y+st->y >= 0 && y+st->y < WALL_HEIGHT)
+                if (x+st->x >= 0 && x+st->x < WIDTH &&
+                    y+st->y >= 0 && y+st->y < HEIGHT)
                     field[x+st->x][y+st->y]='*';
             }
         }
     }
     	    
-    for (y=0; y<WALL_HEIGHT; ++y) {
-        for (x=0; x<WALL_WIDTH; ++x) {
-            fprintf(stderr, "%c", field[WALL_WIDTH-x-1][y]);
+    for (y=0; y<HEIGHT; ++y) {
+        for (x=0; x<WIDTH; ++x) {
+            fprintf(stderr, "%c", field[WIDTH-x-1][y]);
         }
         fprintf(stderr, "\n\r");
     }
     fprintf(stderr, "\n\r");
 }
 
-void send_field(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
+void send_field(uint8_t playfield[WIDTH][HEIGHT][3],
                 struct stone * st){
-    uint8_t output[WALL_WIDTH][WALL_HEIGHT][3];
+    uint8_t output[WIDTH][HEIGHT][3];
 
     int i, x, y;
-
-    memset(output, 0, WALL_SIZE*3);
     
-    for (y=0; y<WALL_HEIGHT; ++y) {
-        for (x=0; x<WALL_WIDTH; ++x) {
+    for (y=0; y<HEIGHT; ++y) {
+        for (x=0; x<WIDTH; ++x) {
             for (i=0; i<3; ++i) {
                 output[x][y][i]=playfield[x][y][i];
             }
@@ -191,7 +157,7 @@ void send_field(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
     for (y=0; y<MAX_STONE_SIZE; ++y) {
         for (x=0; x<MAX_STONE_SIZE; ++x) {
             if(st->data[x][y][0] > 0 || st->data[x][y][1] > 0 || st->data[x][y][2] > 0){
-                if (x+st->x >= 0 && x+st->x < WALL_WIDTH && y+st->y >= 0 && y+st->y < WALL_HEIGHT){
+                if (x+st->x >= 0 && x+st->x < WIDTH && y+st->y >= 0 && y+st->y < HEIGHT){
                     for (i=0; i<3; ++i) {
                         output[x+st->x][y+st->y][i]=st->data[x][y][i]; 
                     }
@@ -200,38 +166,15 @@ void send_field(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
         }
     }
 
-    fwrite(output[0][0], 1, WALL_WIDTH*WALL_HEIGHT*3, stdout);
-    fflush(stdout);
+    write(STDOUT_FILENO, output[0][0], DISP_BUF_SIZE);
 }
 
-void send_nextstone(nextstone)
-{
-    char sndbuf[WALL_WIDTH*WALL_HEIGHT*3];
-    memset(sndbuf, 0, WALL_WIDTH*WALL_HEIGHT*3);
-    memcpy(sndbuf, &bw_sendback_prefix, 8);
-    sprintf(sndbuf+8, "tetris stone %d", nextstone);
-
-    fwrite(sndbuf, 1, WALL_WIDTH*WALL_HEIGHT*3, stdout);
-    fflush(stdout);    
-}
-
-void send_points(int points)
-{
-    char sndbuf[WALL_WIDTH*WALL_HEIGHT*3];
-    memset(sndbuf, 0, WALL_WIDTH*WALL_HEIGHT*3);
-    memcpy(sndbuf, &bw_sendback_prefix, 8);
-    sprintf(sndbuf+8, "tetris points %d", points);
-
-    fwrite(sndbuf, 1, WALL_WIDTH*WALL_HEIGHT*3, stdout);
-    fflush(stdout);    
-}
-
-void move_playfield_down(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
+void move_playfield_down(uint8_t playfield[WIDTH][HEIGHT][3],
                          struct stone * st, int line){
-    uint8_t playfield_tmp [WALL_WIDTH][WALL_HEIGHT][3];
+    uint8_t playfield_tmp [WIDTH][HEIGHT][3];
     int i, x, y, length;
 
-    length = WALL_WIDTH;
+    length = WIDTH;
 
     for (i=0; i<length; ++i) {
         playfield[i][line][0]=0;
@@ -243,9 +186,9 @@ void move_playfield_down(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
     usleep(500000);
 
     //playfield um eins nach gravity
-    memcpy(playfield_tmp, playfield, WALL_SIZE * 3);
+    memcpy(playfield_tmp, playfield, DISP_BUF_SIZE);
     for (y=line; y>0; --y) {
-        for (x=0; x<WALL_WIDTH; ++x) {
+        for (x=0; x<WIDTH; ++x) {
             playfield[x][y][0]=playfield_tmp[x][y-1][0];
             playfield[x][y][1]=playfield_tmp[x][y-1][1];
             playfield[x][y][2]=playfield_tmp[x][y-1][2];
@@ -263,32 +206,32 @@ void move_playfield_down(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
     usleep(500000);
 }
 
-int check_for_ready_line(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3]){
+int check_for_ready_line(uint8_t playfield[WIDTH][HEIGHT][3]){
 
     int x, y, line;
  
-    for (y=WALL_HEIGHT-1; y>=0; --y) {
+    for (y=HEIGHT-1; y>=0; --y) {
         line=0;
-        for (x=0; x<WALL_WIDTH; ++x) {
+        for (x=0; x<WIDTH; ++x) {
             if(playfield[x][y][0] != 0 ||
                playfield[x][y][1] != 0 ||
                playfield[x][y][2] != 0)
                 line++;
         }
-        if (line == WALL_WIDTH)
+        if (line == WIDTH)
             return y;
     }
 
     return -1;
 }
 
-int check_for_touch(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
+int check_for_touch(uint8_t playfield[WIDTH][HEIGHT][3],
                     struct stone * st) {
     int x, y;
     for (y=0; y<MAX_STONE_SIZE; ++y) {
         for (x=0; x<MAX_STONE_SIZE; ++x) {
     	    if(st->data[x][y][0] > 0 || st->data[x][y][1] > 0 || st->data[x][y][2] > 0) {
-                if (y+st->y >= WALL_HEIGHT){
+                if (y+st->y >= HEIGHT){
                     if (DEBUG) fprintf(stderr, "WALL ");
                     return 1;
                 }
@@ -299,8 +242,8 @@ int check_for_touch(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
     for (y=0; y<MAX_STONE_SIZE; ++y) {
         for (x=0; x<MAX_STONE_SIZE; ++x) {
             if(st->data[x][y][0] != 0 || st->data[x][y][1] != 0 || st->data[x][y][2] != 0) {
-                if(st->x+x >= 0 && st->x+x < WALL_WIDTH &&
-                   st->y+y >= 0 && st->y+y < WALL_HEIGHT){
+                if(st->x+x >= 0 && st->x+x < WIDTH &&
+                   st->y+y >= 0 && st->y+y < HEIGHT){
                     if(playfield[st->x+x][st->y+y][0] != 0 ||
                        playfield[st->x+x][st->y+y][1] != 0 ||
                        playfield[st->x+x][st->y+y][2] != 0) {
@@ -315,7 +258,7 @@ int check_for_touch(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
     return 0;  
 }
 
-int allow_movement(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
+int allow_movement(uint8_t playfield[WIDTH][HEIGHT][3],
                    struct stone * st) {
     int x, y;
     for (y=0; y<MAX_STONE_SIZE; ++y) {
@@ -323,10 +266,10 @@ int allow_movement(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
             if(st->data[x][y][0] > 0 ||
                st->data[x][y][1] > 0 ||
                st->data[x][y][2] > 0) {
-                if (x+st->x < 0 || x+st->x >= WALL_WIDTH)
+                if (x+st->x < 0 || x+st->x >= WIDTH)
                     return 0;
-                if (st->x+x >= 0 && st->x+x < WALL_WIDTH &&
-                    st->y+y >= 0 && st->y+y < WALL_HEIGHT) {
+                if (st->x+x >= 0 && st->x+x < WIDTH &&
+                    st->y+y >= 0 && st->y+y < HEIGHT) {
                     if(playfield[st->x+x][st->y+y][0] != 0 ||
                        playfield[st->x+x][st->y+y][1] != 0 ||
                        playfield[st->x+x][st->y+y][2] != 0)
@@ -338,96 +281,85 @@ int allow_movement(uint8_t playfield[WALL_WIDTH][WALL_HEIGHT][3],
     return 1;
 }
 
-char read_command(delay)
-{
-    fd_set readfds;
-    struct timeval tv;
-    int retval = 0;
-    char cmd_buf[1024];
-        
-    FD_ZERO(&readfds);
-    FD_SET(0, &readfds);
-    tv.tv_sec = 0;
-    tv.tv_usec = delay;
-        
-    retval = select(STDIN_FILENO+1, &readfds, NULL, NULL, &tv);
-    if (retval > 0) {
-        int num_read = read(STDIN_FILENO, cmd_buf, 255);
-        if (num_read > 0) {
-            return(cmd_buf[0]);
-        } else {
-            return 0;
-        }
-    } else {
-        return 0;
+int config_handler(void * user,
+                   const char * name,
+                   const char * value) {
+    struct tetris_config * tc = (struct tetris_config *)user;
+
+    if (strcmp(value, "delay")) {
+        tc->delay = atoi(value);
     }
+
+    return 1;
 }
 
 int main(int argc, char * argv[]) {
-    uint8_t playfield [WALL_WIDTH][WALL_HEIGHT][3];
+    uint8_t playfield [WIDTH][HEIGHT][3];
 
     struct stone st;
     struct stone st_tmp;
 
+    struct tetris_config conf;
+
+    struct controller_handle * ch;
+    struct command cmd;
+
+    struct bl_timer * timer;
+
     int x, y;
     int line_to_remove;
-    int delay = 300000;
 
     int stone_next;
 
     int points = 0;
+    int delay;
 
-    struct timeval tv;
-    struct timeval tv2;
-    struct timeval tv_res;
+    conf.delay = 300000;
 
-    //BwlSocketContext * sc;
-
-    system ("/bin/stty -echo raw");
-
-/*
-    sc = bw_socket_open();
-    if (!sc) {
-        fprintf(stderr, "Error opening socket\n");
+    // Read configuration
+    if (!read_config(config_handler, &conf, "tetris")) {
+        fprintf(stderr, "Error reading configuration\n");
         return 1;
     }
-*/
 
-/*
-    if (bw_wait_for_connections(sc) != 0) {
-        fprintf(stderr, "Error when waiting for connection\n");
-        return 1;
-    }
-*/
+    delay = conf.delay;
 
     srand(time(NULL));
 
-    memset(playfield, 0, WALL_SIZE * 3);
-    memset(st.data, 0, MAX_STONE_SIZE * MAX_STONE_SIZE*3);
-    memset(st_tmp.data, 0, MAX_STONE_SIZE * MAX_STONE_SIZE*3);
+    memset(playfield[0][0], 0, DISP_BUF_SIZE);
+    memset(st.data[0][0], 0, MAX_STONE_SIZE * MAX_STONE_SIZE*3);
+    memset(st_tmp.data[0][0], 0, MAX_STONE_SIZE * MAX_STONE_SIZE*3);
 
     st = stones[rand() % NUM_STONES];
     stone_next = rand() % NUM_STONES;
-    send_nextstone(stone_next);
 
-    send_points(0);
+    ch = open_controller(CONTROLLER_TYPE_JOYSTICK |
+                         CONTROLLER_TYPE_STDIN);
+    if (!ch) {
+        fprintf(stderr, "No joysticks/controllers found.\n");
+        return -1;
+    }
 
-    gettimeofday(&tv, NULL);
+    timer = bl_timer_create();
 
     while(1) {
         int touched;
-        int key;
+        int key = 0;
 
-        key = read_command(delay);
-        //key = bw_get_cmd_block_timeout(sc, NULL, delay);
+        cmd = read_command(ch, delay);
         
         if (DEBUG) fprintf(stderr, "WHILE BEGIN\n\r");
 
         touched = 0;
 
-        if (key == KEY_ROT_LEFT) {
+        if (cmd.value > 0)
+            key = cmd.number;
+
+        if (key == KEY_B1 ||
+            key == KEY_B1_K1) {
             st_tmp = rotate_stone(st);
-        } else if (key == KEY_ROT_RIGHT) {
+        } else if (key == KEY_B2 ||
+                   key == KEY_B2_K2) {
             int i;
             for (i=0; i<3; ++i)
                 st_tmp = rotate_stone(st);
@@ -438,51 +370,23 @@ int main(int argc, char * argv[]) {
             st = st_tmp;
 
         st_tmp = st;
-        if (key == KEY_LEFT) {
+        if (key == KEY_LEFT || key == KEY_LEFT_K1) {
             st_tmp.x++;
-        } else if (key == KEY_RIGHT) {
+        } else if (key == KEY_RIGHT || key == KEY_RIGHT_K1) {
             st_tmp.x--;
-        } else if (key == KEY_DOWN) {
+        } else if (key == KEY_DOWN || key == KEY_DOWN_K1) {
             delay /= 10;
-        } else if (key == KEY_QUIT) {
+        } else if (key == KEY_QUIT || key == KEY_QUIT_K) {
             goto exit;
         } else {
             st_tmp = st;
         }
+
         if (allow_movement(playfield, &st_tmp)) {
             st = st_tmp;
         }
 
-/*
-        switch(key) {
-        case BW_CMD_BUTTON2_PRESSED:
-            rotated_stone = rotate_stone(st);
-            break;
-        case BW_CMD_BUTTON1_PRESSED:
-            for (i=0; i<3; ++i)
-                rotated_stone = rotate_stone(st);
-            break;
-        case BW_CMD_LEFT_PRESSED:
-            rotated_stone.x++;
-            break;
-        case BW_CMD_RIGHT_PRESSED:
-            rotated_stone.x--;
-            break;
-        case BW_CMD_DOWN_PRESSED:
-            delay /= 10;
-            break;
-        case  BW_CMD_DISCONNECT:
-            goto exit;
-        default:
-            rotated_stone = st;
-        }
-*/
-
-        gettimeofday(&tv2, NULL);
-
-        timeval_subtract(&tv_res, &tv2, &tv);
-
-        if (tv_res.tv_usec > delay) {
+        if (bl_timer_elapsed(timer) > delay) {
             int lines_removed;
 
             st_tmp = st;
@@ -520,8 +424,7 @@ int main(int argc, char * argv[]) {
                 }
                 st = stones[stone_next];
                 stone_next = rand() % NUM_STONES;
-                send_nextstone(stone_next);
-                delay = 300000;
+                delay = conf.delay;
             }
 	
             lines_removed = 0;
@@ -531,11 +434,8 @@ int main(int argc, char * argv[]) {
                 lines_removed++;
                 points += (lines_removed * 100);
             }
-            if (lines_removed > 0) {
-                send_points(points);
-            }
 
-            gettimeofday(&tv, NULL);
+            bl_timer_start(timer);
         }
 
         paint_field(playfield, &st);
@@ -543,9 +443,7 @@ int main(int argc, char * argv[]) {
     }
 
 exit:
-    printf("\n\r");
-    system ("/bin/stty echo cooked");
-    //bw_socket_close(sc);
-
+    bl_timer_free(timer);
+    close_controller(ch);
     return 0;
 }

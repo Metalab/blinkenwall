@@ -4,13 +4,11 @@
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
-#include "joystick.h"
-#include "joyrumble.h"
+#include <time.h>
+#include "common.h"
+#include "input.h"
 
-#define FIELD_WIDTH         24
-#define FIELD_HEIGHT        24
 #define MAX_DISTANCE        33.941125497
-#define RUMBLE              0
 
 #define FIELD_TYPE_EMPTY    0
 #define FIELD_TYPE_HARDWALL 1
@@ -33,26 +31,7 @@
 #define MONSTERS            6
 #define MONSTER_SPEED       10
 
-
-#define KEY_UP_K1    'w'
-#define KEY_DOWN_K1  's'
-#define KEY_LEFT_K1  'a'
-#define KEY_RIGHT_K1 'd'
-#define KEY_BOMB_K1  'q'
-#define KEY_UP_K2    'i'
-#define KEY_DOWN_K2  'k'
-#define KEY_LEFT_K2  'j'
-#define KEY_RIGHT_K2 'l'
-#define KEY_BOMB_K2  'u'
-#define KEY_UP        8
-#define KEY_DOWN     10
-#define KEY_LEFT     11
-#define KEY_RIGHT     9
-#define KEY_BOMB     18
-#define KEY_QUIT     16
-#define KEY_QUIT_K   0x3 // Ctrl+c
-
-#define DELAY        66666
+#define DELAY               66666
 
 struct playfield
 {
@@ -92,31 +71,6 @@ struct monster
     int alive;
 };
 
-int
-timeval_subtract (result, x, y)
-    struct timeval *result, *x, *y;
-{
-    /* Perform the carry for the later subtraction by updating y. */
-    if (x->tv_usec < y->tv_usec) {
-        int nsec = (y->tv_usec - x->tv_usec) / 1000000 + 1;
-        y->tv_usec -= 1000000 * nsec;
-        y->tv_sec += nsec;
-    }
-    if (x->tv_usec - y->tv_usec > 1000000) {
-        int nsec = (x->tv_usec - y->tv_usec) / 1000000;
-        y->tv_usec += 1000000 * nsec;
-        y->tv_sec -= nsec;
-    }
-
-    /* Compute the time remaining to wait.
-       tv_usec is certainly positive. */
-    result->tv_sec = x->tv_sec - y->tv_sec;
-    result->tv_usec = x->tv_usec - y->tv_usec;
-
-    /* Return 1 if result is negative. */
-    return x->tv_sec < y->tv_sec;
-}
-
 int get_newpos_from_i(int x, int y, int * dx, int * dy, int i)
 {
     int mx, my, pos;
@@ -147,20 +101,20 @@ int get_newpos_from_i(int x, int y, int * dx, int * dy, int i)
         x = 0;
         mx = 0;
     }
-    else if (x >= FIELD_WIDTH) {
-        x = FIELD_WIDTH - 1;
+    else if (x >= WIDTH) {
+        x = WIDTH - 1;
         mx = 0;
     }
     if (y < 0) {
         y = 0;
         my = 0;
     }
-    else if (y >= FIELD_HEIGHT) {
-        y = FIELD_HEIGHT - 1;
+    else if (y >= HEIGHT) {
+        y = HEIGHT - 1;
         my = 0;
     }
 
-    pos = y * FIELD_WIDTH + x;
+    pos = y * WIDTH + x;
 
     *dx = mx;
     *dy = my;
@@ -172,15 +126,15 @@ void draw_field(struct playfield * f, struct player * pl,
                 struct bomb * bomb, int num_bombs,
                 struct monster * mons, int num_mons)
 {
-    uint8_t field[FIELD_HEIGHT * FIELD_WIDTH * 3];
+    uint8_t field[HEIGHT * WIDTH * 3];
     int playerpos;
     int x, y, i, j, k;
 
-    for (y=0; y<FIELD_WIDTH; y++)
+    for (y=0; y<WIDTH; y++)
     {
-        for (x=0; x<FIELD_HEIGHT; x++)
+        for (x=0; x<HEIGHT; x++)
         {
-            int pos = (y * FIELD_WIDTH + x);
+            int pos = (y * WIDTH + x);
             int fieldpos = pos * 3;
 
             switch (f[pos].type) {
@@ -228,7 +182,7 @@ void draw_field(struct playfield * f, struct player * pl,
 
     for (i=0; i<num_bombs; i++)
     {
-        int fieldpos = (bomb[i].y * FIELD_WIDTH + bomb[i].x) * 3;
+        int fieldpos = (bomb[i].y * WIDTH + bomb[i].x) * 3;
         if (bomb[i].ticks > 0) {
             if (bomb[i].ticks % 2 == 0) {
                 if (bomb[i].is_red) {
@@ -257,25 +211,25 @@ void draw_field(struct playfield * f, struct player * pl,
     // Player colors
 
     if (pl[0].alive) {
-        playerpos = (pl[0].y * FIELD_WIDTH + pl[0].x) * 3;
+        playerpos = (pl[0].y * WIDTH + pl[0].x) * 3;
         field[playerpos+0] = 0;
         field[playerpos+1] = 0;
         field[playerpos+2] = 211;
     }
     if (pl[1].alive) {
-        playerpos = (pl[1].y * FIELD_WIDTH + pl[1].x) * 3;
+        playerpos = (pl[1].y * WIDTH + pl[1].x) * 3;
         field[playerpos+0] = 70;
         field[playerpos+1] = 255;
         field[playerpos+2] = 70;
     }
     if (pl[2].alive) {
-        playerpos = (pl[2].y * FIELD_WIDTH + pl[2].x) * 3;
+        playerpos = (pl[2].y * WIDTH + pl[2].x) * 3;
         field[playerpos+0] = 211;
         field[playerpos+1] = 0;
         field[playerpos+2] = 0;
     }
     if (pl[3].alive) {
-        playerpos = (pl[3].y * FIELD_WIDTH + pl[3].x) * 3;
+        playerpos = (pl[3].y * WIDTH + pl[3].x) * 3;
         field[playerpos+0] = 146;
         field[playerpos+1] = 146;
         field[playerpos+2] = 146;
@@ -285,7 +239,7 @@ void draw_field(struct playfield * f, struct player * pl,
 
     for (i=0; i<num_mons; i++)
     {
-        int fieldpos = (mons[i].y * FIELD_WIDTH + mons[i].x) * 3;
+        int fieldpos = (mons[i].y * WIDTH + mons[i].x) * 3;
         if (mons[i].alive) {
             field[fieldpos+0] = 213;
             field[fieldpos+1] = 60;
@@ -306,9 +260,9 @@ void draw_field(struct playfield * f, struct player * pl,
                     for (k=0; k<count_to; k++) {
                         int nx = bomb[i].x + k * dx;
                         int ny = bomb[i].y + k * dy;
-                        if (nx >= 0 && nx < FIELD_WIDTH &&
-                            ny >= 0 && ny < FIELD_HEIGHT) {
-                            int npos = (ny * FIELD_WIDTH + nx) * 3;
+                        if (nx >= 0 && nx < WIDTH &&
+                            ny >= 0 && ny < HEIGHT) {
+                            int npos = (ny * WIDTH + nx) * 3;
                             field[npos+0] = 243;
                             field[npos+1] = 113;
                             field[npos+2] = 0;
@@ -319,7 +273,7 @@ void draw_field(struct playfield * f, struct player * pl,
         }
     }
 
-    write(STDOUT_FILENO, field, FIELD_HEIGHT * FIELD_WIDTH * 3);
+    write(STDOUT_FILENO, field, HEIGHT * WIDTH * 3);
 }
 
 void populate_playfield(struct playfield * pf,
@@ -327,11 +281,11 @@ void populate_playfield(struct playfield * pf,
 {
     int x, y, i;
 
-    for (y=0; y<FIELD_WIDTH; y++)
+    for (y=0; y<WIDTH; y++)
     {
-        for (x=0; x<FIELD_HEIGHT; x++)
+        for (x=0; x<HEIGHT; x++)
         {
-            int pos = (y * FIELD_WIDTH + x);
+            int pos = (y * WIDTH + x);
             int special = rand() % ITEM_MAX_RAND;
             if (FILL_RANDOMIZED && rand() % FILL_RANDOMIZED == 0) {
                 pf[pos].type = FIELD_TYPE_EMPTY;
@@ -356,31 +310,31 @@ void populate_playfield(struct playfield * pf,
 
     pf[0].type = FIELD_TYPE_EMPTY;
     pf[1].type = FIELD_TYPE_EMPTY;
-    pf[FIELD_WIDTH].type = FIELD_TYPE_EMPTY;
-    pf[FIELD_WIDTH+1].type = FIELD_TYPE_EMPTY;
+    pf[WIDTH].type = FIELD_TYPE_EMPTY;
+    pf[WIDTH+1].type = FIELD_TYPE_EMPTY;
 
-    pf[FIELD_WIDTH-1].type = FIELD_TYPE_EMPTY;
-    pf[FIELD_WIDTH-2].type = FIELD_TYPE_EMPTY;
-    pf[FIELD_WIDTH*2-1].type = FIELD_TYPE_EMPTY;
-    pf[FIELD_WIDTH*2-2].type = FIELD_TYPE_EMPTY;
+    pf[WIDTH-1].type = FIELD_TYPE_EMPTY;
+    pf[WIDTH-2].type = FIELD_TYPE_EMPTY;
+    pf[WIDTH*2-1].type = FIELD_TYPE_EMPTY;
+    pf[WIDTH*2-2].type = FIELD_TYPE_EMPTY;
 
-    pf[(FIELD_HEIGHT-1)*FIELD_WIDTH].type = FIELD_TYPE_EMPTY;
-    pf[(FIELD_HEIGHT-1)*FIELD_WIDTH+1].type = FIELD_TYPE_EMPTY;
-    pf[(FIELD_HEIGHT-2)*FIELD_WIDTH].type = FIELD_TYPE_EMPTY;
-    pf[(FIELD_HEIGHT-2)*FIELD_WIDTH+1].type = FIELD_TYPE_EMPTY;
+    pf[(HEIGHT-1)*WIDTH].type = FIELD_TYPE_EMPTY;
+    pf[(HEIGHT-1)*WIDTH+1].type = FIELD_TYPE_EMPTY;
+    pf[(HEIGHT-2)*WIDTH].type = FIELD_TYPE_EMPTY;
+    pf[(HEIGHT-2)*WIDTH+1].type = FIELD_TYPE_EMPTY;
 
-    pf[FIELD_HEIGHT*FIELD_WIDTH-1].type = FIELD_TYPE_EMPTY;
-    pf[FIELD_HEIGHT*FIELD_WIDTH-2].type = FIELD_TYPE_EMPTY;
-    pf[FIELD_HEIGHT*FIELD_WIDTH-3].type = FIELD_TYPE_EMPTY;
-    pf[FIELD_HEIGHT*(FIELD_WIDTH-1)-1].type = FIELD_TYPE_EMPTY;
-    pf[FIELD_HEIGHT*(FIELD_WIDTH-1)-2].type = FIELD_TYPE_EMPTY;
-    pf[FIELD_HEIGHT*(FIELD_WIDTH-1)-3].type = FIELD_TYPE_EMPTY;
+    pf[HEIGHT*WIDTH-1].type = FIELD_TYPE_EMPTY;
+    pf[HEIGHT*WIDTH-2].type = FIELD_TYPE_EMPTY;
+    pf[HEIGHT*WIDTH-3].type = FIELD_TYPE_EMPTY;
+    pf[HEIGHT*(WIDTH-1)-1].type = FIELD_TYPE_EMPTY;
+    pf[HEIGHT*(WIDTH-1)-2].type = FIELD_TYPE_EMPTY;
+    pf[HEIGHT*(WIDTH-1)-3].type = FIELD_TYPE_EMPTY;
 
-    for (y=1; y<FIELD_WIDTH; y+=2)
+    for (y=1; y<WIDTH; y+=2)
     {
-        for (x=1; x<FIELD_HEIGHT; x+=2)
+        for (x=1; x<HEIGHT; x+=2)
         {
-            int pos = (y * FIELD_WIDTH + x);
+            int pos = (y * WIDTH + x);
             pf[pos].type = FIELD_TYPE_HARDWALL;
         }
     }
@@ -388,23 +342,23 @@ void populate_playfield(struct playfield * pf,
     for (i=0; i<num_mons; i++){
         while(1){
             int pos;
-            x=rand() % FIELD_WIDTH;
-            y=rand() % FIELD_HEIGHT;
-            pos = (y * FIELD_WIDTH + x);
+            x=rand() % WIDTH;
+            y=rand() % HEIGHT;
+            pos = (y * WIDTH + x);
             if(pf[pos].type == FIELD_TYPE_HARDWALL ||
-               pos == 0 || pos == 1 || pos == FIELD_WIDTH || pos == FIELD_WIDTH+1 ||
-               pos == FIELD_WIDTH-1 || pos == FIELD_WIDTH-2 ||
-               pos == FIELD_WIDTH*2-1 || pos == FIELD_WIDTH*2-2 ||
-               pos == (FIELD_HEIGHT-1)*FIELD_WIDTH ||
-               pos == (FIELD_HEIGHT-1)*FIELD_WIDTH+1 ||
-               pos == (FIELD_HEIGHT-2)*FIELD_WIDTH ||
-               pos == (FIELD_HEIGHT-2)*FIELD_WIDTH+1 ||
-               pos == FIELD_HEIGHT*FIELD_WIDTH-1 ||
-               pos == FIELD_HEIGHT*FIELD_WIDTH-2 ||
-               pos == FIELD_HEIGHT*FIELD_WIDTH-3 ||
-               pos == FIELD_HEIGHT*(FIELD_WIDTH-1)-1 ||
-               pos == FIELD_HEIGHT*(FIELD_WIDTH-1)-2 ||
-               pos == FIELD_HEIGHT*(FIELD_WIDTH-1)-3) {
+               pos == 0 || pos == 1 || pos == WIDTH || pos == WIDTH+1 ||
+               pos == WIDTH-1 || pos == WIDTH-2 ||
+               pos == WIDTH*2-1 || pos == WIDTH*2-2 ||
+               pos == (HEIGHT-1)*WIDTH ||
+               pos == (HEIGHT-1)*WIDTH+1 ||
+               pos == (HEIGHT-2)*WIDTH ||
+               pos == (HEIGHT-2)*WIDTH+1 ||
+               pos == HEIGHT*WIDTH-1 ||
+               pos == HEIGHT*WIDTH-2 ||
+               pos == HEIGHT*WIDTH-3 ||
+               pos == HEIGHT*(WIDTH-1)-1 ||
+               pos == HEIGHT*(WIDTH-1)-2 ||
+               pos == HEIGHT*(WIDTH-1)-3) {
                 continue;
             } else {
                 mons[i].x = x;
@@ -434,17 +388,15 @@ int is_bomb(int x, int y, struct bomb * bm, int n_bombs)
 
 int main(int argc, char * argv[])
 {
-    struct playfield * field = malloc(FIELD_HEIGHT * FIELD_WIDTH *
+    struct playfield * field = malloc(HEIGHT * WIDTH *
                                       sizeof(struct playfield));
 
     struct player pl[4];
     struct monster mons[MONSTERS];
-    struct bomb bm[(3 * FIELD_WIDTH * FIELD_HEIGHT) / 4];
+    struct bomb bm[(3 * WIDTH * HEIGHT) / 4];
     struct controller_handle * ch;
     struct command cmd;
-    struct timeval tv;
-    struct timeval tv2;
-    struct timeval tv_res;
+    struct bl_timer * timer;
     int frame = 0;
     int n_bombs = 0;
     int n_monsters = MONSTERS;
@@ -474,7 +426,7 @@ int main(int argc, char * argv[])
     }
 
     for (i=0; i<MONSTERS; i++) {
-        mons[i].x = FIELD_WIDTH-1;
+        mons[i].x = WIDTH-1;
         mons[i].y = 0;
         mons[i].speed = 10;
         mons[i].alive = 1;
@@ -482,16 +434,16 @@ int main(int argc, char * argv[])
 
     pl[0].x = 0;
     pl[0].y = 0;
-    pl[1].x = FIELD_WIDTH - 1 - ((FIELD_WIDTH+1) % 2);
-    pl[1].y = FIELD_HEIGHT - 1;
-    pl[2].x = FIELD_WIDTH - 1 - ((FIELD_WIDTH+1) % 2);
+    pl[1].x = WIDTH - 1 - ((WIDTH+1) % 2);
+    pl[1].y = HEIGHT - 1;
+    pl[2].x = WIDTH - 1 - ((WIDTH+1) % 2);
     pl[2].y = 0;
-    pl[3].x = ((FIELD_HEIGHT+1) % 2);
-    pl[3].y = FIELD_HEIGHT - 1;
+    pl[3].x = ((HEIGHT+1) % 2);
+    pl[3].y = HEIGHT - 1;
 
     populate_playfield(field, mons, n_monsters);
 
-    gettimeofday(&tv, NULL);
+    timer = bl_timer_create();
 
     while(1) {
         cmd = read_command(ch, DELAY);
@@ -560,9 +512,9 @@ int main(int argc, char * argv[])
                     pl[p].last_move = 0;
                 }
                 break;
-            case KEY_BOMB_K1:
-            case KEY_BOMB_K2:
-            case KEY_BOMB:
+            case KEY_B1_K1:
+            case KEY_B1_K2:
+            case KEY_B1:
                 if (pl[p].alive && pl[p].cur_bombs < pl[p].max_bombs &&
                     !is_bomb(pl[p].x, pl[p].y, bm, n_bombs)) {
                     bm[n_bombs].x = pl[p].x;
@@ -585,10 +537,7 @@ int main(int argc, char * argv[])
             }
         }
 
-        gettimeofday(&tv2, NULL);
-        timeval_subtract(&tv_res, &tv2, &tv);
-
-        if (tv_res.tv_usec > DELAY) {
+        if (bl_timer_elapsed(timer) > DELAY) {
 
             for (i=0; i<n_monsters; i++) {
                 if (frame % mons[i].speed == 0) {
@@ -597,8 +546,8 @@ int main(int argc, char * argv[])
                     npos = get_newpos_from_i(mons[i].x, mons[i].y, &dx, &dy, dir);
                     nx = mons[i].x + dx;
                     ny = mons[i].y + dy;
-                    if (nx >= 0 && nx < FIELD_WIDTH &&
-                        ny >= 0 && ny < FIELD_HEIGHT &&
+                    if (nx >= 0 && nx < WIDTH &&
+                        ny >= 0 && ny < HEIGHT &&
                         field[npos].type == FIELD_TYPE_EMPTY) {
                         if (!is_bomb(nx, ny, bm, n_bombs)) {
                             mons[i].x = nx;
@@ -613,9 +562,9 @@ int main(int argc, char * argv[])
                     int nx, ny, npos;
                     nx = pl[i].x + mx[i];
                     ny = pl[i].y + my[i];
-                    npos = ny * FIELD_WIDTH + nx;
-                    if (nx >= 0 && nx < FIELD_WIDTH &&
-                        ny >= 0 && ny < FIELD_HEIGHT &&
+                    npos = ny * WIDTH + nx;
+                    if (nx >= 0 && nx < WIDTH &&
+                        ny >= 0 && ny < HEIGHT &&
                         field[npos].type == FIELD_TYPE_EMPTY) {
                         if (!is_bomb(nx, ny, bm, n_bombs)) {
                             if (pl[i].alive &&
@@ -665,7 +614,8 @@ int main(int argc, char * argv[])
                 } else {
                     if (frame % 3 == 0) {
                         bm[i].ticks--;
-                        if (RUMBLE && bm[i].ticks == 0) {
+#ifdef RUMBLE
+                        if (bm[i].ticks == 0) {
                             for (j=0; j<PLAYERS; j++) {
                                 double power;
                                 double dist = sqrt(pow((bm[i].x - pl[j].x), 2) +
@@ -676,6 +626,7 @@ int main(int argc, char * argv[])
                                 }
                             }
                         }
+#endif
                     }
                 }
 
@@ -688,9 +639,9 @@ int main(int argc, char * argv[])
                             for (k=0; k<bm[i].current_length; k++) {
                                 int nx = bm[i].x + k * dx;
                                 int ny = bm[i].y + k * dy;
-                                if (nx >= 0 && nx < FIELD_WIDTH &&
-                                    ny >= 0 && ny < FIELD_HEIGHT) {
-                                    int npos = ny * FIELD_WIDTH + nx;
+                                if (nx >= 0 && nx < WIDTH &&
+                                    ny >= 0 && ny < HEIGHT) {
+                                    int npos = ny * WIDTH + nx;
 
                                     if (k >= bm[i].max_length[j])
                                         break;
@@ -743,7 +694,7 @@ int main(int argc, char * argv[])
 
             draw_field(field, pl, bm, n_bombs, mons, n_monsters);
             frame++;
-            gettimeofday(&tv, NULL);
+            bl_timer_start(timer);
 
             if (last_ctype == IN_TYPE_STDIN) {
                 mx[p] = 0;
