@@ -73,11 +73,11 @@ void send_field(struct coord * snake, int snake_length,
 
     memset(field, 0, DISP_BUF_SIZE);
 
-    field[POS3(food.y, food.x)] = 255;
+    field[POS3(food.x, food.y)] = 255;
 
-    field[POS3(snake[0].y, snake[0].x)+2] = 255;
+    field[POS3(snake[0].x, snake[0].y)+2] = 255;
     for (i=1; i<snake_length; ++i)
-        field[POS3(snake[i].y, snake[i].x)+1] = 255;
+        field[POS3(snake[i].x, snake[i].y)+1] = 255;
 
     write(STDOUT_FILENO, field, DISP_BUF_SIZE);
 }
