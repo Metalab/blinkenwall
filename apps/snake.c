@@ -16,6 +16,8 @@ struct coord {
 
 struct snake_config {
     int delay;
+    int rotate_x;
+    int rotate_y;
 };
 
 struct coord new_food(struct coord * snake, int snake_length) {
@@ -83,8 +85,14 @@ int config_handler(void * user,
                    const char * value) {
     struct snake_config * sc = (struct snake_config *)user;
 
-    if (strcmp(value, "delay")) {
+    if (!strcmp(name, "delay")) {
         sc->delay = atoi(value);
+    }
+    else if (!strcmp(name, "rotate-horizontal")) {
+        sc->rotate_x = atoi(value);
+    }
+    else if (!strcmp(name, "rotate-vertical")) {
+        sc->rotate_y = atoi(value);
     }
 
     return 1;
@@ -103,6 +111,8 @@ int main(int argc, char * argv[]) {
     int snake_length;
 
     conf.delay = 100000;
+    conf.rotate_x = 0;
+    conf.rotate_y = 0;
 
     // Read configuration
     if (!read_config(config_handler, &conf, "snake")) {
@@ -189,6 +199,20 @@ int main(int argc, char * argv[]) {
             snake[i] = snake[i-1];
         snake[0].x += dir.x;
         snake[0].y += dir.y;
+
+        if (conf.rotate_x) {
+            if (snake[0].x < 0)
+                snake[0].x = WIDTH - 1;
+            else if (snake[0].x >= WIDTH)
+                snake[0].x = 0;
+        }
+
+        if (conf.rotate_y) {
+            if (snake[0].y < 0)
+                snake[0].y = HEIGHT - 1;
+            else if (snake[0].y >= HEIGHT)
+                snake[0].y = 0;
+        }
 
         if (snake[0].x < 0 || snake[0].x >= WIDTH ||
             snake[0].y < 0 || snake[0].y >= HEIGHT) {
