@@ -9,6 +9,8 @@
 #include <unistd.h>
 #include "common.h"
 
+#define CMD_QUEUE_SIZE 16
+
 struct coord {
     int x;
     int y;
@@ -110,6 +112,11 @@ int main(int argc, char * argv[]) {
     int i;
     int snake_length;
 
+    int cmd_queue[CMD_QUEUE_SIZE];
+    int cmdq_read = 0;
+    int cmdq_write = 0;
+    int n_cmdq = 0;
+
     conf.delay = 100000;
     conf.rotate_x = 0;
     conf.rotate_y = 0;
@@ -145,34 +152,47 @@ int main(int argc, char * argv[]) {
     timer = bl_timer_create();
 
     while(1) {
-        cmd = read_command(ch, conf.delay);
+        int n_wait = conf.delay - bl_timer_elapsed(timer);
+        if (n_wait < 1)
+            n_wait = 1;
 
-        if (cmd.value > 0) {
-            switch(cmd.number) {
+        cmd = read_command(ch, n_wait);
+
+        if (cmd.value > 0 && !n_cmdq < CMD_QUEUE_SIZE) {
+            cmd_queue[cmdq_write++ % CMD_QUEUE_SIZE] =
+                cmd.number;
+            n_cmdq++;
+        }
+
+        if (bl_timer_elapsed(timer) < conf.delay)
+            continue;
+
+        if (n_cmdq > 0) {
+            switch(cmd_queue[cmdq_read++ % CMD_QUEUE_SIZE]) {
             case KEY_UP:
             case KEY_UP_K1:
-                if (dir.y != 1) {
+                if (dir.y == 0) {
                     dir.x = 0;
                     dir.y = -1;
                 }
                 break;
             case KEY_DOWN:
             case KEY_DOWN_K1:
-                if (dir.y != -1) {
+                if (dir.y == 0) {
                     dir.x = 0;
                     dir.y = 1;
                 }
                 break;
             case KEY_LEFT:
             case KEY_LEFT_K1:
-                if (dir.x != 1) {
+                if (dir.x == 0) {
                     dir.x = -1;
                     dir.y = 0;
                 }
                 break;
             case KEY_RIGHT:
             case KEY_RIGHT_K1:
-                if (dir.x != -1) {
+                if (dir.x == 0) {
                     dir.x = 1;
                     dir.y = 0;
                 }
@@ -183,10 +203,9 @@ int main(int argc, char * argv[]) {
             default:
                 break;
             }
-        }
 
-        if (bl_timer_elapsed(timer) < conf.delay)
-            continue;
+            n_cmdq--;
+        }
 
         if (snake[0].x == food.x &&
             snake[0].y == food.y) {
