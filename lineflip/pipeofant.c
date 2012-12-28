@@ -96,8 +96,8 @@ int main(int argc, char *argv[])
         memset(outbuf, 0, OUTBUF_SIZE);
         outpos = 0;
  
-        for (x=WIDTH-1; x>=0; x--) {
-            for (y=HEIGHT-1; y>=0; y--) {
+        for (x=0; x<WIDTH; x++) {
+            for (y=0; y<HEIGHT; y++) {
                 int on = 0;
                 inpos = (y * WIDTH + x) * bpp;
                 for (i=0; i<bpp; i++) {
