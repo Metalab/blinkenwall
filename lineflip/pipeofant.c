@@ -118,6 +118,9 @@ int main(int argc, char *argv[])
     }
  
     close(fd);
+
+    free(buf);
+    free(outbuf);
  
     return ret;
 }
