@@ -12,11 +12,11 @@
 #include <bcm2835.h>
  
 #define SPI_DEVICE   "/dev/spidev0.0"
-#define WIDTH         32
+#define WIDTH         (n_panels * 8)
 #define HEIGHT        9
 #define BLINK_BIT_POS 10
 #define MAX_BUF_SIZE  WIDTH * HEIGHT * 4
-#define OUTBUF_SIZE   40
+#define OUTBUF_SIZE   (n_panels * 10)
 #define PIN_DISPLAY_ENABLE RPI_GPIO_P1_22
  
 int main(int argc, char *argv[])
@@ -24,8 +24,8 @@ int main(int argc, char *argv[])
     int ret = 0;
     int fd;
     int bytes_read;
-    uint8_t buf[MAX_BUF_SIZE];
-    uint8_t outbuf[OUTBUF_SIZE];
+    uint8_t *buf;
+    uint8_t *outbuf;
     int x, y, i;
     int inpos, outpos;
  
@@ -35,20 +35,30 @@ int main(int argc, char *argv[])
     uint8_t bits = 8;
     uint32_t speed = 100000;
 
+    int n_panels = 4;
+
     bcm2835_init();
     bcm2835_gpio_fsel(PIN_DISPLAY_ENABLE, BCM2835_GPIO_FSEL_OUTP);
  
-/** Usage: give number of bytes per color as command line argument
- *  Example: 'pipeofant 3' for RGB input
+/** Usage: give number of bytes per color as command line argument, and the
+ *  number of panels. (Defaults: 1bpc, 4 panels)
+ *  Example: 'pipeofant 3 4' for RGB input on four panels.
  */
  
     if (argc > 1) {
-        int bpp_tmp = atoi(argv[1]);
-        if (bpp_tmp >= 1 && bpp_tmp <= 4) {
-            bpp = bpp_tmp;
-        }
+        bpp = atoi(argv[1]);
+        if (bpp < 1 || bpp > 4) exit(1);
     }
- 
+    if (argc > 2) {
+        n_panels = atoi(argv[2]);
+	if (n_panels <= 0) exit(1);
+    }
+
+    buf = malloc(MAX_BUF_SIZE);
+    outbuf = malloc(OUTBUF_SIZE);
+    if (buf == NULL || outbuf == NULL)
+        exit(2);
+
     fd = open(SPI_DEVICE, O_WRONLY);
  
     if (fd < 0) {
