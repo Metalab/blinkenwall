@@ -9,7 +9,7 @@
 #include <unistd.h>
 #include "common.h"
 
-#define CMD_QUEUE_SIZE 16
+#define CMD_QUEUE_SIZE 2
 
 struct coord {
     int x;
@@ -108,13 +108,14 @@ int main(int argc, char * argv[]) {
     struct command cmd;
     struct bl_timer * timer;
     struct snake_config conf;
- 
+
     int i;
     int snake_length;
 
     int cmd_queue[CMD_QUEUE_SIZE];
     int cmdq_read = 0;
     int cmdq_write = 0;
+    int cmdq_last = 0;
     int n_cmdq = 0;
 
     conf.delay = 100000;
@@ -158,10 +159,17 @@ int main(int argc, char * argv[]) {
 
         cmd = read_command(ch, n_wait);
 
-        if (cmd.value > 0 && !n_cmdq < CMD_QUEUE_SIZE) {
+        if (((cmd.number >= 'a' && cmd.number <= 'w') ||
+            (cmd.number >= 8 && cmd.number <= 11)) &&
+            cmd.number != cmdq_last &&
+            (cmd.value == 1 || cmd.value > 10000) &&
+            !n_cmdq < CMD_QUEUE_SIZE) {
+            fprintf(stderr, "Cmd: %d\r\n", cmd.number);
+
             cmd_queue[cmdq_write++ % CMD_QUEUE_SIZE] =
                 cmd.number;
             n_cmdq++;
+            cmdq_last = cmd.number;
         }
 
         if (bl_timer_elapsed(timer) < conf.delay)
