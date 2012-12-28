@@ -39,13 +39,14 @@ int main(int argc, char *argv[])
     uint32_t speed = 200000;
 
     int n_panels = 4;
+    int use_grayscale = 1;
 
     bcm2835_init();
     bcm2835_gpio_fsel(PIN_DISPLAY_ENABLE, BCM2835_GPIO_FSEL_OUTP);
  
 /** Usage: give number of bytes per color as command line argument, and the
- *  number of panels. (Defaults: 1bpc, 4 panels)
- *  Example: 'pipeofant 3 4' for RGB input on four panels.
+ *  number of panels, and whether you want grayscale. (Defaults: 1bpc, 4 panels, grayscale on)
+ *  Example: 'pipeofant 3 4 0' for RGB input on four panels without grayscale)
  */
  
     if (argc > 1) {
@@ -56,6 +57,8 @@ int main(int argc, char *argv[])
         n_panels = atoi(argv[2]);
 	if (n_panels <= 0) exit(1);
     }
+    if (argc > 2 && argv[1] != NULL && argv[1][0] == '0')
+        use_grayscale = 0;
 
     buf = malloc(MAX_BUF_SIZE);
     outbuf = malloc(OUTBUF_SIZE);
@@ -99,16 +102,18 @@ int main(int argc, char *argv[])
             exit(4); /* this should not happen, it's either -1 and EGAIN or nothing at all, otherwise we have a partially updated buffer */
 
 	if (threshold == 0x30)
-		usleep(5000);
-	if (threshold == 0x20)
-		usleep(2000);
-	if (threshold == 0x10)
-		usleep(1000);
+            usleep(5000);
+	if (use_grayscale) {
+            if (threshold == 0x20)
+                usleep(2000);
+            if (threshold == 0x10)
+                usleep(1000);
+
+            threshold = (threshold + 0x10) % 0x40;
+	}
  
         memset(outbuf, 0, OUTBUF_SIZE);
         outpos = 0;
-
-	threshold = (threshold + 0x10) % 0x40;
  
         for (x=0; x<WIDTH; x++) {
             for (y=0; y<HEIGHT; y++) {
