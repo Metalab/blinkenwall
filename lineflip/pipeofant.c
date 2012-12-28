@@ -10,6 +10,7 @@
 #include <linux/types.h>
 #include <linux/spi/spidev.h>
 #include <bcm2835.h>
+#include <errno.h>
  
 #define SPI_DEVICE   "/dev/spidev0.0"
 #define WIDTH         (n_panels * 8)
@@ -83,15 +84,19 @@ int main(int argc, char *argv[])
         printf("SPEED %i\n", ret);
         return ret;
     }
+
+    fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);
  
     for(;;) {
         bytes_read = read(STDIN_FILENO, buf, WIDTH * HEIGHT * bpp);
+
+	if (bytes_read == -1 && errno != EAGAIN)
+		exit(3);
  
-        if (bytes_read <= 0)
-            break;
- 
-        if (bytes_read != WIDTH * HEIGHT * bpp)
-            continue;
+        if (bytes_read != -1 && bytes_read != WIDTH * HEIGHT * bpp)
+            exit(4); /* this should not happen, it's either -1 and EGAIN or nothing at all, otherwise we have a partially updated buffer */
+
+	usleep(10000);
  
         memset(outbuf, 0, OUTBUF_SIZE);
         outpos = 0;
