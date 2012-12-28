@@ -29,12 +29,14 @@ int main(int argc, char *argv[])
     uint8_t *outbuf;
     int x, y, i;
     int inpos, outpos;
+
+    uint8_t threshold = 0x30;
  
     int bpp = 1;
  
     uint8_t mode = 0;
     uint8_t bits = 8;
-    uint32_t speed = 100000;
+    uint32_t speed = 200000;
 
     int n_panels = 4;
 
@@ -96,17 +98,24 @@ int main(int argc, char *argv[])
         if (bytes_read != -1 && bytes_read != WIDTH * HEIGHT * bpp)
             exit(4); /* this should not happen, it's either -1 and EGAIN or nothing at all, otherwise we have a partially updated buffer */
 
-	usleep(10000);
+	if (threshold == 0x30)
+		usleep(5000);
+	if (threshold == 0x20)
+		usleep(2000);
+	if (threshold == 0x10)
+		usleep(1000);
  
         memset(outbuf, 0, OUTBUF_SIZE);
         outpos = 0;
+
+	threshold = (threshold + 0x10) % 0x40;
  
         for (x=0; x<WIDTH; x++) {
             for (y=0; y<HEIGHT; y++) {
                 int on = 0;
                 inpos = (y * WIDTH + x) * bpp;
                 for (i=0; i<bpp; i++) {
-                    if (buf[inpos+i] > 0x30) {
+                    if (buf[inpos+i] > threshold) {
                         on = 1;
                     }
                 }
