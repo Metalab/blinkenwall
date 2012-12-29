@@ -66,7 +66,7 @@ void paint_field(struct coord * snake,
     fprintf(stderr, "\n\r");
 }
 
-void send_field(struct coord * snake, int snake_length,
+void send_field_color(struct coord * snake, int snake_length,
                 struct coord food) {
     uint8_t field[DISP_BUF_SIZE];
     int i;
@@ -84,7 +84,7 @@ void send_field(struct coord * snake, int snake_length,
 
 /* still use a 3-big because it makes stuff easier. writing to the same color
  * components as the rgb version */
-void send_field_grayscale(struct coord * snake, int snake_length,
+void send_field(struct coord * snake, int snake_length,
                 struct coord food) {
     uint8_t field[DISP_BUF_SIZE];
     int i;
