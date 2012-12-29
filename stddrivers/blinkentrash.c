@@ -6,7 +6,7 @@
 
 static void usage(char progname[])
 {
-	fprintf(stderr, "some_program | %s width height\n");
+	fprintf(stderr, "some_program | %s width height\n", progname);
 	fprintf(stderr, "\n");
 	fprintf(stderr, "Take buffer contents from stdin in chunks of widht * height * 3, and display it on a blinkentrash can.\n");
 }
