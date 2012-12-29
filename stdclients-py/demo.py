@@ -10,12 +10,12 @@ accelerating = True
 while True:
     if horizontal == False:
         for y in range(0, d.height) + range(d.height-1, -1, -1):
-            data = [(255,0,0) if (i//d.width == y) else (0,0,0) for i in xrange(d.width*d.height)]
+            data = [(255,0,0) if (i//d.width == y) else (10,10,10) for i in xrange(d.width*d.height)]
             d.send(data)
             time.sleep(delay)
     else:
         for x in range(0, d.width) + range(d.width-1, -1, -1):
-            data = [(0,255,0) if (i%d.width == x) else (0,0,0) for i in xrange(d.width*d.height)]
+            data = [(0,255,0) if (i%d.width == x) else (0,0,10) for i in xrange(d.width*d.height)]
             d.send(data)
             time.sleep(delay)
     if accelerating:
