@@ -11,5 +11,5 @@ class Display(object):
         sys.stdout.write(string)
         sys.stdout.flush()
 
-    width = sys.argv[1]
-    height = sys.argv[2]
+    width = int(sys.argv[1])
+    height = int(sys.argv[2])
