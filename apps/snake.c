@@ -82,6 +82,25 @@ void send_field(struct coord * snake, int snake_length,
     write(STDOUT_FILENO, field, DISP_BUF_SIZE);
 }
 
+/* still use a 3-big because it makes stuff easier. writing to the same color
+ * components as the rgb version */
+void send_field_grayscale(struct coord * snake, int snake_length,
+                struct coord food) {
+    uint8_t field[DISP_BUF_SIZE];
+    int i;
+
+    memset(field, 0, DISP_BUF_SIZE);
+
+    field[POS3(food.x, food.y)] = 0x31;
+
+    field[POS3(snake[0].x, snake[0].y)+2] = 0x31;
+    for (i=1; i<snake_length-1; ++i)
+        field[POS3(snake[i].x, snake[i].y)+1] = 0x21;
+    field[POS3(snake[snake_length-1].x, snake[snake_length-1].y)+1] = 0x11;
+
+    write(STDOUT_FILENO, field, DISP_BUF_SIZE);
+}
+
 int config_handler(void * user,
                    const char * name,
                    const char * value) {
