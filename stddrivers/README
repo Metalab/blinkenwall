@@ -1,0 +1,30 @@
+Drivers for the stdin/stdout buffer exchange protocol
+=====================================================
+
+The following devices are supported:
+
+* lineflip: Wolfgang's table
+* pipeofant: the blinkofant panels, formerly ice stadion panel
+
+Protocol
+--------
+
+All drivers expect their video data on stdin, in chunks of complete buffers
+contents.
+
+The buffer dimensions and bytes per pixel have to be negotiated externally. The
+bytes are interpreted as 8 bit unsigned integers corresponding to brightness.
+In one-byte-per-pixel mode, data is usually interpreted as grayscale values,
+three-byte-per-pixel is interpreted as 8 bit red, 8 bit green, and 8 bit blue.
+
+The exact meanings of color values are unspecified. Drivers that can just
+display on and off states commonly interpret values up to 0x30 as off and above
+as on; as an effect, they take ASCII 0 and 1 characters for off and on.
+
+That consideration also motivates the pixel sequence, which is top row first
+from left to right, and then (without any line breaks) the following rows up to
+the last. No padding or similar is used. Clients are expected to write out
+their complete buffer contents in one block.
+
+Implementations can use ASCII art, map the characters to color values (unless
+they use 1 and 0 on a single-bit display) and just strip out the newlines.
