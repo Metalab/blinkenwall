@@ -43,6 +43,11 @@ int main(int argc, char * argv[]) {
     int i, x, y;
     int send_header = 0;
     int swap_rgb = 0;
+    int x0 = 0;
+    int x1 = WIDTH;
+    int y0 = 0;
+    int y1 = HEIGHT;
+    int inc = 1;
     
     struct timeval tv1, tv2, tv_res;
 
@@ -52,6 +57,16 @@ int main(int argc, char * argv[]) {
         }
         else if (strcmp(argv[i], "-rgbswap") == 0) {
             swap_rgb = 1;
+        }
+        else if (strcmp(argv[i], "-flip-horiz") == 0) {
+            x0 = WIDTH-1;
+            x1 = -1;
+            inc = -1;
+        }
+        else if (strcmp(argv[i], "-flip-vert") == 0) {
+            y0 = HEIGHT-1;
+            y1 = -1;
+            inc = -1;
         }
     }
 
@@ -77,8 +92,8 @@ int main(int argc, char * argv[]) {
         timeval_subtract(&tv_res, &tv2, &tv1);
 
         if (tv_res.tv_usec >= MIN_DELAY) {
-            for (y=0; y<HEIGHT; y++) {
-                for (x=0; x<WIDTH; x++) {
+            for (y=y0; y!=y1; y+=inc) {
+                for (x=x0; 1!=x1; x+=inc) {
                     int inpos = (y * WIDTH + x) * 3;
                     int outpos;
                     if (y % 2 != 0) {
