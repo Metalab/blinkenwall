@@ -4,7 +4,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#define SPI_DEVICE "/dev/spidev0.0"
+#define SPI_DEVICE "/dev/ttyACM0"
 #define WIDTH      24
 #define HEIGHT     24
 #define BUF_SIZE   WIDTH * HEIGHT * 3
@@ -35,13 +35,20 @@ timeval_subtract (result, x, y)
     return x->tv_sec < y->tv_sec;
 }
 
-int main(int argc, char * argv) {
+int main(int argc, char * argv[]) {
     int spi_fd;
     int bytes_read;
     uint8_t buf[BUF_SIZE];
     uint8_t outbuf[BUF_SIZE];
-    int x, y;
+    int i, x, y;
+    int send_header = 0;
     struct timeval tv1, tv2, tv_res;
+
+    for(i=1; i<argc; i++) {
+        if (strcmp(argv[i], "-header") == 0) {
+            send_header = 1;
+        }
+    }
 
     spi_fd = open(SPI_DEVICE, O_WRONLY);
 
@@ -80,6 +87,8 @@ int main(int argc, char * argv) {
                 }
             }
 
+            if (send_header)
+                write(spi_fd, "FNORD", 5);
             write(spi_fd, outbuf, BUF_SIZE);
 
             gettimeofday(&tv1, NULL);
