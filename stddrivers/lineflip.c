@@ -42,11 +42,16 @@ int main(int argc, char * argv[]) {
     uint8_t outbuf[BUF_SIZE];
     int i, x, y;
     int send_header = 0;
+    int swap_rgb = 0;
+    
     struct timeval tv1, tv2, tv_res;
 
     for(i=1; i<argc; i++) {
         if (strcmp(argv[i], "-header") == 0) {
             send_header = 1;
+        }
+        else if (strcmp(argv[i], "-rgbswap") == 0) {
+            swap_rgb = 1;
         }
     }
 
@@ -81,9 +86,15 @@ int main(int argc, char * argv[]) {
                     } else {
                         outpos = (y * WIDTH + x) * 3;
                     }
-                    outbuf[outpos+0] = buf[inpos+2];
-                    outbuf[outpos+1] = buf[inpos+1];
-                    outbuf[outpos+2] = buf[inpos+0];
+                    if (swap_rgb) {
+                        outbuf[outpos+0] = buf[inpos+0];
+                        outbuf[outpos+1] = buf[inpos+1];
+                        outbuf[outpos+2] = buf[inpos+2];
+                    } else {
+                        outbuf[outpos+0] = buf[inpos+2];
+                        outbuf[outpos+1] = buf[inpos+1];
+                        outbuf[outpos+2] = buf[inpos+0];
+                    }
                 }
             }
 
