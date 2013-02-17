@@ -43,6 +43,14 @@ int main(int argc, char * argv[]) {
     int i, x, y;
     int send_header = 0;
     int swap_rgb = 0;
+    int x0 = 0;
+    int x1 = WIDTH;
+    int y0 = 0;
+    int y1 = HEIGHT;
+    int hinc = 1;
+    int vinc = 1;
+    int delay = 0;
+    int sleeptime;
     
     struct timeval tv1, tv2, tv_res;
 
@@ -52,6 +60,19 @@ int main(int argc, char * argv[]) {
         }
         else if (strcmp(argv[i], "-rgbswap") == 0) {
             swap_rgb = 1;
+        }
+        else if (strcmp(argv[i], "-hflip") == 0) {
+            x0 = WIDTH-1;
+            x1 = -1;
+            hinc = -1;
+        }
+        else if (strcmp(argv[i], "-vflip") == 0) {
+            y0 = HEIGHT-1;
+            y1 = -1;
+            vinc = -1;
+        }
+        else if (strncmp(argv[i], "-d", 2) == 0) {
+            delay = atoi(argv[i]+2) * 1000;
         }
     }
 
@@ -76,9 +97,16 @@ int main(int argc, char * argv[]) {
         gettimeofday(&tv2, NULL);
         timeval_subtract(&tv_res, &tv2, &tv1);
 
+        if (delay) {
+            sleeptime = delay - tv_res.tv_usec;
+            if (sleeptime > 0) {
+                usleep(sleeptime);
+            }
+        }
+
         if (tv_res.tv_usec >= MIN_DELAY) {
-            for (y=0; y<HEIGHT; y++) {
-                for (x=0; x<WIDTH; x++) {
+            for (y=y0; y!=y1; y+=vinc) {
+                for (x=x0; x!=x1; x+=hinc) {
                     int inpos = (y * WIDTH + x) * 3;
                     int outpos;
                     if (y % 2 != 0) {
