@@ -51,6 +51,7 @@ int main(int argc, char * argv[]) {
     int vinc = 1;
     int delay = 0;
     int sleeptime;
+    char * outdev = SPI_DEVICE;
     
     struct timeval tv1, tv2, tv_res;
 
@@ -58,25 +59,28 @@ int main(int argc, char * argv[]) {
         if (strcmp(argv[i], "-header") == 0) {
             send_header = 1;
         }
-        else if (strcmp(argv[i], "-rgbswap") == 0) {
+        else if(strcmp(argv[i], "-rgbswap") == 0) {
             swap_rgb = 1;
         }
-        else if (strcmp(argv[i], "-hflip") == 0) {
+        else if(strcmp(argv[i], "-hflip") == 0) {
             x0 = WIDTH-1;
             x1 = -1;
             hinc = -1;
         }
-        else if (strcmp(argv[i], "-vflip") == 0) {
+        else if(strcmp(argv[i], "-vflip") == 0) {
             y0 = HEIGHT-1;
             y1 = -1;
             vinc = -1;
         }
-        else if (strncmp(argv[i], "-d", 2) == 0) {
+        else if(strncmp(argv[i], "-d", 2) == 0) {
             delay = atoi(argv[i]+2) * 1000;
+        }
+        else if (strncmp(argv[i], "-o", 2) == 0) {
+            outdev = argv[i] + 2;
         }
     }
 
-    spi_fd = open(SPI_DEVICE, O_WRONLY);
+    spi_fd = open(outdev, O_WRONLY);
 
     if (spi_fd < 0) {
         fprintf(stderr, "Could not open SPI device %s\n", SPI_DEVICE);
@@ -105,9 +109,9 @@ int main(int argc, char * argv[]) {
         }
 
         if (tv_res.tv_usec >= MIN_DELAY) {
+            int inpos = 0;
             for (y=y0; y!=y1; y+=vinc) {
                 for (x=x0; x!=x1; x+=hinc) {
-                    int inpos = (y * WIDTH + x) * 3;
                     int outpos;
                     if (y % 2 != 0) {
                         outpos = (y * WIDTH + WIDTH - x - 1) * 3;
@@ -123,6 +127,7 @@ int main(int argc, char * argv[]) {
                         outbuf[outpos+1] = buf[inpos+1];
                         outbuf[outpos+2] = buf[inpos+0];
                     }
+                    inpos += 3;
                 }
             }
 
