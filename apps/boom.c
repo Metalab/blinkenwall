@@ -405,8 +405,8 @@ int main(int argc, char * argv[])
     int p = 0;
     int i, j, k, l;
 
-    ch = open_controller(CONTROLLER_TYPE_JOYSTICK |
-                         CONTROLLER_TYPE_STDIN);
+    ch = open_controller(CONTROLLER_TYPE_STDIN);
+
     if (!ch) {
         fprintf(stderr, "No joysticks/controllers found.\n");
         return -1;
@@ -447,10 +447,6 @@ int main(int argc, char * argv[])
 
     while(1) {
         cmd = read_command(ch, DELAY);
-
-        if (cmd.controller >= PLAYERS ||
-            cmd.type != 2)
-            continue;
 
         if (cmd.controller >= 0)
             p = cmd.controller;

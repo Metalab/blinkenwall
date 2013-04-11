@@ -9,8 +9,8 @@
 #include "./font.c"
 
 
-#define WALL_WIDTH  18
-#define WALL_HEIGHT 9
+#define WALL_WIDTH  24
+#define WALL_HEIGHT 24
 #define WALL_SIZE WALL_WIDTH * WALL_HEIGHT
 #define COLOUR 0
 #define MAX_INTENSITY 255
